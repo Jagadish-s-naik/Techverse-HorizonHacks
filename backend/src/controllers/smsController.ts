@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { smsService } from '../services/smsService.js';
 import { query } from '../config/db.js';
 

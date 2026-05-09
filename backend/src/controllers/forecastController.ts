@@ -47,7 +47,13 @@ export const getLatestForecast = async (req: Request, res: Response) => {
   
   try {
     const cacheKey = `forecast:${crop}:${mandi}`;
-    let forecast = await redis.get<any>(cacheKey);
+    let forecast = null;
+    
+    try {
+      forecast = await redis.get<any>(cacheKey);
+    } catch (e) {
+      console.warn('Redis cache error, falling back to DB:', e);
+    }
 
     if (!forecast) {
       const forecastResult = await query(
@@ -60,8 +66,13 @@ export const getLatestForecast = async (req: Request, res: Response) => {
       }
 
       forecast = forecastResult.rows[0];
-      // Cache for 1 hour
-      await redis.set(cacheKey, forecast, { ex: 3600 });
+      
+      try {
+        // Cache for 1 hour
+        await redis.set(cacheKey, forecast, { ex: 3600 });
+      } catch (e) {
+        console.warn('Failed to set Redis cache:', e);
+      }
     }
 
     let recommendation = null;

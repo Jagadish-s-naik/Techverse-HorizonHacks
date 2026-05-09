@@ -1,4 +1,4 @@
-import { Forecast } from '../models/types.js';
+import type { Forecast } from '../models/types.js';
 
 export interface SMSPayload {
   to: string;
