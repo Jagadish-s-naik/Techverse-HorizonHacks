@@ -393,7 +393,7 @@ TWILIO_TOKEN=...        # optional
 | Time | Task | Owner |
 |---|---|---|
 | 0–2h | Supabase setup + schema + seed data import | Backend |
-| 0–2h | React Native project init + navigation setup | Frontend |
+| 0–2h |React Native project init + navigation setup | Frontend |
 | 2–5h | Forecast engine + Claude API integration | Backend |
 | 2–5h | Onboarding screen + Farmer Profile service | Full-stack |
 | 5–8h | Forecast Card UI + API integration | Frontend |

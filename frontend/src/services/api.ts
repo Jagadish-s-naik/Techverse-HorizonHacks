@@ -13,8 +13,8 @@ export const farmerService = {
 };
 
 export const forecastService = {
-  getLatest: (crop: string, mandi: string) => 
-    api.get(`/forecasts?crop=${crop.toLowerCase()}&mandi=${mandi.toLowerCase()}`),
+  getLatest: (crop: string, mandi: string, farmerId?: string | null) => 
+    api.get(`/forecasts?crop=${crop.toLowerCase()}&mandi=${mandi.toLowerCase()}${farmerId ? `&farmerId=${farmerId}` : ''}`),
   getHistory: (crop: string, mandi: string) => 
     api.get(`/forecasts/history?crop=${crop.toLowerCase()}&mandi=${mandi.toLowerCase()}`),
 };

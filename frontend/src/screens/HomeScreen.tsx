@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import { useProfileStore } from '../store/useProfileStore';
 import { forecastService, communityService } from '../services/api';
 import ForecastCard from '../components/ForecastCard';
+import DecisionSheet from '../components/DecisionSheet';
 import * as Speech from 'expo-speech';
+import { Lightbulb } from 'lucide-react-native';
 
 const HomeScreen = () => {
   const { profile } = useProfileStore();
@@ -11,10 +13,11 @@ const HomeScreen = () => {
   const [community, setCommunity] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showDecision, setShowDecision] = useState(false);
 
   const fetchData = async () => {
     try {
-      const forecastRes = await forecastService.getLatest(profile.crop, profile.mandi);
+      const forecastRes = await forecastService.getLatest(profile.crop, profile.mandi, profile.id);
       setForecast(forecastRes.data);
 
       const communityRes = await communityService.getSignal(profile.crop, profile.district);
@@ -35,7 +38,13 @@ const HomeScreen = () => {
             "Lower arrivals in local markets due to harvest delays",
             "Favorable weather supporting quality"
           ],
-          forecast_date: new Date().toISOString()
+          forecast_date: new Date().toISOString(),
+          recommendation: {
+            action: 'Hold — wait 5–7 days before selling',
+            risk: 'moderate',
+            rationale: 'Prices are trending up with high confidence.',
+            alternative: 'Sell 30% now if cash is needed.'
+          }
         });
       }
     } finally {
@@ -60,7 +69,7 @@ const HomeScreen = () => {
       The trend is ${forecast.trend}. 
       Confidence is ${forecast.confidence} percent. 
       Key drivers: ${forecast.drivers.join('. ')}`;
-    
+
     Speech.speak(text, {
       language: profile.language === 'Kannada' ? 'kn-IN' : 'en-IN',
       rate: 0.9
@@ -76,35 +85,51 @@ const HomeScreen = () => {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View style={styles.welcomeSection}>
-        <Text style={styles.welcomeText}>Hello, Farmer</Text>
-        <Text style={styles.dateText}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
-      </View>
-
-      {forecast && (
-        <ForecastCard 
-          data={forecast} 
-          onVoiceReadout={handleVoiceReadout}
-          onTrackRecordPress={() => {}}
-        />
-      )}
-
-      {community && (
-        <View style={styles.communitySignal}>
-          <Text style={styles.communityTitle}>Community Signal</Text>
-          <Text style={styles.communityInfo}>
-            <Text style={styles.countText}>{community.count}</Text> farmers in your district plan to grow {community.crop} this season.
-          </Text>
-          <Text style={styles.implicationText}>{community.implication}</Text>
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        style={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        <View style={styles.welcomeSection}>
+          <Text style={styles.welcomeText}>Hello, Farmer</Text>
+          <Text style={styles.dateText}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         </View>
-      )}
-      
-      <View style={{ height: 40 }} />
-    </ScrollView>
+
+        {forecast && (
+          <TouchableOpacity activeOpacity={0.9} onPress={() => setShowDecision(true)}>
+            <ForecastCard
+              data={forecast}
+              onVoiceReadout={handleVoiceReadout}
+              onTrackRecordPress={() => { }}
+            />
+            {forecast.recommendation && (
+              <View style={styles.quickAction}>
+                <Lightbulb size={20} color="#2E7D32" />
+                <Text style={styles.quickActionText}>Tap to view recommended decision</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {community && (
+          <View style={styles.communitySignal}>
+            <Text style={styles.communityTitle}>Community Signal</Text>
+            <Text style={styles.communityInfo}>
+              <Text style={styles.countText}>{community.count}</Text> farmers in your district plan to grow {community.crop} this season.
+            </Text>
+            <Text style={styles.implicationText}>{community.implication}</Text>
+          </View>
+        )}
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      <DecisionSheet
+        visible={showDecision}
+        onClose={() => setShowDecision(false)}
+        recommendation={forecast?.recommendation}
+      />
+    </View>
   );
 };
 
@@ -131,6 +156,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 4,
+  },
+  quickAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 12,
+    marginTop: -10,
+    marginBottom: 20,
+    marginHorizontal: 10,
+    zIndex: -1,
+  },
+  quickActionText: {
+    color: '#2E7D32',
+    fontWeight: '600',
+    fontSize: 14,
   },
   communitySignal: {
     backgroundColor: '#E8F5E9',
