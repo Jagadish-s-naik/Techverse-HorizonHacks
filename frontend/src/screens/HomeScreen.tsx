@@ -6,26 +6,52 @@ import ForecastCard from '../components/ForecastCard';
 import DecisionSheet from '../components/DecisionSheet';
 import TrackRecordModal from '../components/TrackRecordModal';
 import * as Speech from 'expo-speech';
-import { Lightbulb } from 'lucide-react-native';
+import { Lightbulb, WifiOff } from 'lucide-react-native';
+import { offlineStorage } from '../services/offlineStorage';
+import * as Network from 'expo-network';
 
 const HomeScreen = () => {
-  const { profile } = useProfileStore();
+  const { profile, syncChanges, isSyncing } = useProfileStore();
   const [forecast, setForecast] = useState<any>(null);
   const [community, setCommunity] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showDecision, setShowDecision] = useState(false);
   const [showTrackRecord, setShowTrackRecord] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const fetchData = async () => {
+    // 1. Try to load from offline storage first (Stale-While-Revalidate)
+    const cacheKeyForecast = `forecast_${profile.crop}_${profile.mandi}`;
+    const cacheKeyCommunity = `community_${profile.crop}_${profile.district}`;
+
+    const cachedForecast = await offlineStorage.getResponse(cacheKeyForecast);
+    const cachedCommunity = await offlineStorage.getResponse(cacheKeyCommunity);
+
+    if (cachedForecast) setForecast(cachedForecast);
+    if (cachedCommunity) setCommunity(cachedCommunity);
+    if (cachedForecast || cachedCommunity) setLoading(false);
+
     try {
+      const networkState = await Network.getNetworkStateAsync();
+      const online = networkState.isConnected && networkState.isInternetReachable;
+      setIsOffline(!online);
+
+      if (!online) {
+        if (!cachedForecast) throw new Error('Offline and no cache');
+        return;
+      }
+
       const forecastRes = await forecastService.getLatest(profile.crop, profile.mandi, profile.id);
       setForecast(forecastRes.data);
+      await offlineStorage.saveResponse(cacheKeyForecast, forecastRes.data);
 
       const communityRes = await communityService.getSignal(profile.crop, profile.district);
       setCommunity(communityRes.data);
+      await offlineStorage.saveResponse(cacheKeyCommunity, communityRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setIsOffline(true);
       // Fallback/Mock data for demo if API fails
       if (!forecast) {
         setForecast({
@@ -57,6 +83,7 @@ const HomeScreen = () => {
 
   useEffect(() => {
     fetchData();
+    syncChanges();
   }, []);
 
   const onRefresh = () => {
@@ -96,6 +123,20 @@ const HomeScreen = () => {
           <Text style={styles.welcomeText}>Hello, Farmer</Text>
           <Text style={styles.dateText}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         </View>
+
+        {isOffline && (
+          <View style={styles.offlineBanner}>
+            <WifiOff size={16} color="#721c24" />
+            <Text style={styles.offlineText}>You are currently offline. Showing cached data.</Text>
+          </View>
+        )}
+
+        {isSyncing && (
+          <View style={styles.syncIndicator}>
+            <ActivityIndicator size="small" color="#2E7D32" />
+            <Text style={styles.syncText}>Syncing pending changes...</Text>
+          </View>
+        )}
 
         {forecast && (
           <TouchableOpacity activeOpacity={0.9} onPress={() => setShowDecision(true)}>
@@ -211,6 +252,38 @@ const styles = StyleSheet.create({
     color: '#1B5E20',
     fontStyle: 'italic',
     marginTop: 10,
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f8d7da',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#f5c6cb',
+  },
+  offlineText: {
+    color: '#721c24',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  syncIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#E8F5E9',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  syncText: {
+    color: '#2E7D32',
+    fontSize: 13,
+    fontWeight: '500',
   },
 });
 

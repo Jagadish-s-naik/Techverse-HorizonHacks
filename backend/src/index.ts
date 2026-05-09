@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import farmerRoutes from './routes/farmerRoutes.js';
 import forecastRoutes from './routes/forecastRoutes.js';
 import communityRoutes from './routes/communityRoutes.js';
+import smsRoutes from './routes/smsRoutes.js';
 
 import cron from 'node-cron';
 import { runForecastPipeline } from './services/forecastService.js';
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use('/api/farmers', farmerRoutes);
 app.use('/api/forecasts', forecastRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/sms', smsRoutes);
 
 // Daily Cron Job at 00:00
 cron.schedule('0 0 * * *', async () => {
