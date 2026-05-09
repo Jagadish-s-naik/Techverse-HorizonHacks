@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import { X, CheckCircle2, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react-native';
 import Svg, { Polyline, Circle, Line } from 'react-native-svg';
+import { useTranslation } from '../utils/translations';
 import { forecastService } from '../services/api';
 
 interface TrackRecordModalProps {
@@ -12,6 +13,7 @@ interface TrackRecordModalProps {
 }
 
 const TrackRecordModal = ({ visible, onClose, crop, mandi }: TrackRecordModalProps) => {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [accuracy, setAccuracy] = useState(0);
@@ -149,7 +151,7 @@ const TrackRecordModal = ({ visible, onClose, crop, mandi }: TrackRecordModalPro
         <View style={styles.sheet}>
           <View style={styles.header}>
             <View>
-              <Text style={styles.title}>Track Record</Text>
+              <Text style={styles.title}>{t.trackRecord}</Text>
               <Text style={styles.subtitle}>{crop} • {mandi}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -164,17 +166,17 @@ const TrackRecordModal = ({ visible, onClose, crop, mandi }: TrackRecordModalPro
               <View style={styles.accuracyCard}>
                 <View style={styles.accuracyCircle}>
                   <Text style={styles.accuracyValue}>{accuracy}%</Text>
-                  <Text style={styles.accuracyLabel}>Accuracy</Text>
+                  <Text style={styles.accuracyLabel}>{t.accuracy}</Text>
                 </View>
                 <View style={styles.accuracyInfo}>
-                  <Text style={styles.accuracyTitle}>Reliable Insights</Text>
+                  <Text style={styles.accuracyTitle}>{t.reliableInsights}</Text>
                   <Text style={styles.accuracyDesc}>
-                    In the last 30 days, {accuracy}% of our price forecasts were accurate within the predicted band.
+                    {accuracy}% {t.accuracyDesc}
                   </Text>
                 </View>
               </View>
 
-              <Text style={styles.sectionTitle}>Price History</Text>
+              <Text style={styles.sectionTitle}>{t.priceHistory}</Text>
               {renderChart()}
 
               <View style={styles.historyList}>
@@ -191,16 +193,16 @@ const TrackRecordModal = ({ visible, onClose, crop, mandi }: TrackRecordModalPro
                       
                       <View style={styles.itemMain}>
                         <View style={styles.priceRow}>
-                          <Text style={styles.predictedLabel}>Predicted: </Text>
+                          <Text style={styles.predictedLabel}>{t.predicted}: </Text>
                           <Text style={styles.predictedValue}>₹{Math.round(item.price_low)} - ₹{Math.round(item.price_high)}</Text>
                         </View>
                         {item.actual_price ? (
                           <View style={styles.priceRow}>
-                            <Text style={styles.actualLabel}>Actual: </Text>
+                            <Text style={styles.actualLabel}>{t.actual}: </Text>
                             <Text style={styles.actualValue}>₹{Math.round(item.actual_price)}</Text>
                           </View>
                         ) : (
-                          <Text style={styles.pendingText}>Waiting for market data...</Text>
+                          <Text style={styles.pendingText}>{t.waitingMarketData}</Text>
                         )}
                       </View>
 
@@ -219,7 +221,7 @@ const TrackRecordModal = ({ visible, onClose, crop, mandi }: TrackRecordModalPro
               </View>
               
               <TouchableOpacity style={styles.doneButton} onPress={onClose}>
-                <Text style={styles.doneButtonText}>Close</Text>
+                <Text style={styles.doneButtonText}>{t.close}</Text>
               </TouchableOpacity>
               <View style={{ height: 20 }} />
             </ScrollView>

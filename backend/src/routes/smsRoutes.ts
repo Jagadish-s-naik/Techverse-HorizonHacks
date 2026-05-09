@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { simulateReceiveSMS } from '../controllers/smsController.js';
+import { simulateReceiveSMS } from '../controllers/smsController';
 
 const router = Router();
 

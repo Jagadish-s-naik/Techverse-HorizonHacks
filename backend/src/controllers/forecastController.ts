@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
-import { query } from '../config/db.js';
-import redis from '../config/redis.js';
+import { query } from '../config/db';
+import redis from '../config/redis';
 
 function getRecommendation(forecast: any, farmer: any) {
   const { trend, confidence } = forecast;

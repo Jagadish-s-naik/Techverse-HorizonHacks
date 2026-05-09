@@ -1,5 +1,5 @@
 -- Anonymous farmer profiles
-CREATE TABLE farmers (
+CREATE TABLE IF NOT EXISTS farmers (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   crop          VARCHAR(50) NOT NULL,
   land_acres    DECIMAL(5,2),
@@ -12,7 +12,7 @@ CREATE TABLE farmers (
 );
 
 -- Seeded mandi price data
-CREATE TABLE mandi_prices (
+CREATE TABLE IF NOT EXISTS mandi_prices (
   id       SERIAL PRIMARY KEY,
   crop     VARCHAR(50) NOT NULL,
   mandi    VARCHAR(100) NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE mandi_prices (
 );
 
 -- Daily computed forecasts
-CREATE TABLE forecasts (
+CREATE TABLE IF NOT EXISTS forecasts (
   id            SERIAL PRIMARY KEY,
   crop          VARCHAR(50) NOT NULL,
   mandi         VARCHAR(100) NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE forecasts (
 );
 
 -- Track record: actuals vs forecasts
-CREATE TABLE forecast_actuals (
+CREATE TABLE IF NOT EXISTS forecast_actuals (
   forecast_id   INTEGER REFERENCES forecasts(id),
   actual_price  DECIMAL(8,2),
   recorded_at   TIMESTAMP DEFAULT NOW(),

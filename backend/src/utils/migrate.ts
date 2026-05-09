@@ -1,4 +1,4 @@
-import { query } from '../config/db.js';
+import { query } from '../config/db';
 import fs from 'fs';
 import path from 'path';
 

@@ -2,13 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-import farmerRoutes from './routes/farmerRoutes.js';
-import forecastRoutes from './routes/forecastRoutes.js';
-import communityRoutes from './routes/communityRoutes.js';
-import smsRoutes from './routes/smsRoutes.js';
+import farmerRoutes from './routes/farmerRoutes';
+import forecastRoutes from './routes/forecastRoutes';
+import communityRoutes from './routes/communityRoutes';
+import smsRoutes from './routes/smsRoutes';
 
 import cron from 'node-cron';
-import { runForecastPipeline } from './services/forecastService.js';
+import { runForecastPipeline } from './services/forecastService';
 
 dotenv.config();
 
@@ -27,6 +27,7 @@ app.use('/api/sms', smsRoutes);
 cron.schedule('0 0 * * *', async () => {
   console.log('Running daily forecast refresh...');
   try {
+    await recordActuals();
     await runForecastPipeline();
     console.log('Daily forecast refresh completed.');
   } catch (error) {

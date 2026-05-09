@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { TrendingUp, TrendingDown, Minus, Volume2, Info } from 'lucide-react-native';
+import { useTranslation } from '../utils/translations';
 
 interface ForecastCardProps {
   data: {
@@ -18,6 +19,7 @@ interface ForecastCardProps {
 }
 
 const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCardProps) => {
+  const { t } = useTranslation();
   const TrendIcon = data.trend === 'up' ? TrendingUp : data.trend === 'down' ? TrendingDown : Minus;
   const trendColor = data.trend === 'up' ? '#2E7D32' : data.trend === 'down' ? '#C62828' : '#F9A825';
 
@@ -26,7 +28,7 @@ const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCard
       <View style={styles.header}>
         <View>
           <Text style={styles.cropTitle}>{data.crop.toUpperCase()}</Text>
-          <Text style={styles.mandiSubtitle}>{data.mandi} Mandi</Text>
+          <Text style={styles.mandiSubtitle}>{data.mandi} {t.mandiLabel}</Text>
         </View>
         <TouchableOpacity onPress={onVoiceReadout} style={styles.voiceButton}>
           <Volume2 size={24} color="#2E7D32" />
@@ -34,7 +36,7 @@ const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCard
       </View>
 
       <View style={styles.priceContainer}>
-        <Text style={styles.priceLabel}>Expected Price (7-14 days)</Text>
+        <Text style={styles.priceLabel}>{t.expectedPriceRange}</Text>
         <View style={styles.priceRow}>
           <Text style={styles.priceValue}>₹{data.price_low} — ₹{data.price_high}</Text>
           <View style={[styles.trendBadge, { backgroundColor: trendColor + '20' }]}>
@@ -45,7 +47,7 @@ const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCard
 
       <View style={styles.confidenceBarContainer}>
         <View style={styles.confidenceHeader}>
-          <Text style={styles.confidenceLabel}>Confidence</Text>
+          <Text style={styles.confidenceLabel}>{t.confidenceIs}</Text>
           <Text style={styles.confidenceValue}>{data.confidence}%</Text>
         </View>
         <View style={styles.progressBar}>
@@ -54,7 +56,7 @@ const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCard
       </View>
 
       <View style={styles.driversContainer}>
-        <Text style={styles.driversTitle}>Key Price Drivers</Text>
+        <Text style={styles.driversTitle}>{t.keyPriceDrivers}</Text>
         {data.drivers.map((driver, index) => (
           <View key={index} style={styles.driverItem}>
             <View style={styles.bullet} />
@@ -65,7 +67,7 @@ const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCard
 
       <TouchableOpacity onPress={onTrackRecordPress} style={styles.trackRecordLink}>
         <Info size={16} color="#666" />
-        <Text style={styles.trackRecordText}>How accurate are we? View track record</Text>
+        <Text style={styles.trackRecordText}>{t.howAccurate}</Text>
       </TouchableOpacity>
     </View>
   );

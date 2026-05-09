@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createFarmer, getFarmer, updateFarmer } from '../controllers/farmerController.js';
+import { createFarmer, getFarmer, updateFarmer } from '../controllers/farmerController';
 
 const router = Router();
 

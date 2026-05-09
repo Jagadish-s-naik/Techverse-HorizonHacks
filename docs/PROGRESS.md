@@ -61,8 +61,8 @@
 ## 🎙️ Phase 4: Accessibility & Final Polish (Day 2: 5-8h) — **PLANNED**
 
 ### Frontend
-- [ ] **SMS-Style Layout**: Minimalist text-only fallback UI for low-connectivity/low-end devices
-- [ ] **Voice Readout**: (Core integration complete) Multi-language TTS support
+- [x] **SMS-Style Layout**: Minimalist text-only fallback UI for low-connectivity/low-end devices
+- [x] **Voice Readout**: Multi-language TTS support (English, Hindi, Kannada, Marathi, Telugu)
 
 ### General
 - [ ] **End-to-End Demo**: Final integration testing and bug fixes

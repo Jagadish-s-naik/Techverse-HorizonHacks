@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { X, ShieldCheck, AlertCircle, Info, ArrowRight } from 'lucide-react-native';
+import { useTranslation } from '../utils/translations';
 
 interface DecisionSheetProps {
   visible: boolean;
@@ -14,6 +15,7 @@ interface DecisionSheetProps {
 }
 
 const DecisionSheet = ({ visible, onClose, recommendation }: DecisionSheetProps) => {
+  const { t } = useTranslation();
   if (!recommendation) return null;
 
   const riskColors = {
@@ -34,7 +36,7 @@ const DecisionSheet = ({ visible, onClose, recommendation }: DecisionSheetProps)
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.header}>
-            <Text style={styles.title}>Decision Recommendation</Text>
+            <Text style={styles.title}>{t.decisionRecommendation}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color="#666" />
             </TouchableOpacity>
@@ -46,7 +48,7 @@ const DecisionSheet = ({ visible, onClose, recommendation }: DecisionSheetProps)
                 <View style={[styles.riskBadge, { backgroundColor: riskColors[recommendation.risk] + '20' }]}>
                   <RiskIcon size={16} color={riskColors[recommendation.risk]} />
                   <Text style={[styles.riskText, { color: riskColors[recommendation.risk] }]}>
-                    {recommendation.risk.toUpperCase()} RISK
+                    {(t[recommendation.risk] || recommendation.risk).toUpperCase()} {t.risk.toUpperCase()}
                   </Text>
                 </View>
               </View>
@@ -56,7 +58,7 @@ const DecisionSheet = ({ visible, onClose, recommendation }: DecisionSheetProps)
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Info size={18} color="#2E7D32" />
-                <Text style={styles.sectionTitle}>Why we recommend this</Text>
+                <Text style={styles.sectionTitle}>{t.whyRecommendThis}</Text>
               </View>
               <Text style={styles.rationaleText}>{recommendation.rationale}</Text>
             </View>
@@ -64,13 +66,13 @@ const DecisionSheet = ({ visible, onClose, recommendation }: DecisionSheetProps)
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <ArrowRight size={18} color="#666" />
-                <Text style={styles.sectionTitle}>Alternative Action</Text>
+                <Text style={styles.sectionTitle}>{t.alternativeAction}</Text>
               </View>
               <Text style={styles.alternativeText}>{recommendation.alternative}</Text>
             </View>
 
             <TouchableOpacity style={styles.doneButton} onPress={onClose}>
-              <Text style={styles.doneButtonText}>I understand</Text>
+              <Text style={styles.doneButtonText}>{t.iUnderstand}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

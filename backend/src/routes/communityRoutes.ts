@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getCommunitySignal } from '../controllers/communityController.js';
+import { getCommunitySignal } from '../controllers/communityController';
 
 const router = Router();
 

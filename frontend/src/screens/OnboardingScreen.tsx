@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
 import { useProfileStore } from '../store/useProfileStore';
+import { useTranslation } from '../utils/translations';
 import { ArrowRight, ArrowLeft, Check } from 'lucide-react-native';
 
 const CROPS = ['Tomato', 'Onion', 'Chickpea', 'Wheat', 'Rice', 'Mustard'];
@@ -8,8 +9,10 @@ const LANGUAGES = ['English', 'Hindi', 'Kannada', 'Marathi', 'Telugu'];
 const MANDIS = ['Kolar', 'Lasalgaon', 'Indore', 'Azadpur', 'Vashi'];
 
 const OnboardingScreen = ({ navigation }: any) => {
-  const { profile, setProfile, saveProfile } = useProfileStore();
+  const { profile, setProfile, createProfile } = useProfileStore();
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
 
   const nextStep = () => {
     if (step < 5) setStep(step + 1);
@@ -21,9 +24,37 @@ const OnboardingScreen = ({ navigation }: any) => {
   };
 
   const handleFinish = async () => {
-    setProfile({ isOnboarded: true });
-    await saveProfile();
-    navigation.replace('Home');
+    console.log('Onboarding: handleFinish triggered');
+    setLoading(true);
+    
+    // Safety timer to force navigation if something hangs
+    const forceNavTimer = setTimeout(() => {
+      console.log('Onboarding: Force navigation triggered after timeout');
+      setLoading(false);
+      navigation.replace('Home');
+    }, 5000);
+
+    try {
+      console.log('Onboarding: Saving profile state...');
+      setProfile({ isOnboarded: true });
+      
+      console.log('Onboarding: Creating profile on backend...');
+      await createProfile();
+      
+      clearTimeout(forceNavTimer);
+      console.log('Onboarding: Complete, replacing screen with Home');
+      navigation.replace('Home');
+    } catch (error) {
+      clearTimeout(forceNavTimer);
+      console.error('Onboarding: Error in handleFinish:', error);
+      Alert.alert(
+        "Notice",
+        "We couldn't sync your profile to our servers, but your data is saved locally. You can continue.",
+        [{ text: "OK", onPress: () => navigation.replace('Home') }]
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderStep = () => {
@@ -31,7 +62,7 @@ const OnboardingScreen = ({ navigation }: any) => {
       case 1:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.label}>Choose your primary crop</Text>
+            <Text style={styles.label}>{t.chooseCrop}</Text>
             <View style={styles.chipContainer}>
               {CROPS.map(crop => (
                 <TouchableOpacity
@@ -48,8 +79,8 @@ const OnboardingScreen = ({ navigation }: any) => {
       case 2:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.label}>What is your land size (acres)?</Text>
-            <Text style={styles.valueDisplay}>{profile.landSize} Acres</Text>
+            <Text style={styles.label}>{t.landSize}</Text>
+            <Text style={styles.valueDisplay}>{profile.landSize} {t.acres}</Text>
             <View style={styles.sizeControl}>
               <TouchableOpacity onPress={() => setProfile({ landSize: Math.max(0.5, profile.landSize - 0.5) })} style={styles.roundButton}><Text style={styles.roundButtonText}>-</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => setProfile({ landSize: profile.landSize + 0.5 })} style={styles.roundButton}><Text style={styles.roundButtonText}>+</Text></TouchableOpacity>
@@ -60,7 +91,7 @@ const OnboardingScreen = ({ navigation }: any) => {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.toggleRow}>
-              <Text style={styles.label}>Do you have irrigation?</Text>
+              <Text style={styles.label}>{t.irrigationQuestion}</Text>
               <Switch 
                 value={profile.hasIrrigation} 
                 onValueChange={(val) => setProfile({ hasIrrigation: val })}
@@ -69,7 +100,7 @@ const OnboardingScreen = ({ navigation }: any) => {
               />
             </View>
             <View style={styles.toggleRow}>
-              <Text style={styles.label}>Do you have storage?</Text>
+              <Text style={styles.label}>{t.storageQuestion}</Text>
               <Switch 
                 value={profile.hasStorage} 
                 onValueChange={(val) => setProfile({ hasStorage: val })}
@@ -82,7 +113,7 @@ const OnboardingScreen = ({ navigation }: any) => {
       case 4:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.label}>Select your nearest mandi</Text>
+            <Text style={styles.label}>{t.selectMandi}</Text>
             <ScrollView style={styles.list}>
               {MANDIS.map(mandi => (
                 <TouchableOpacity
@@ -100,13 +131,14 @@ const OnboardingScreen = ({ navigation }: any) => {
       case 5:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.label}>Select your language</Text>
+            <Text style={styles.label}>{t.selectLanguage}</Text>
             <View style={styles.chipContainer}>
               {LANGUAGES.map(lang => (
                 <TouchableOpacity
                   key={lang}
-                  style={[styles.chip, profile.language === lang && styles.chipActive]}
-                  onPress={() => setProfile({ language: lang })}
+                  style={[styles.chip, profile.language === lang && styles.chipActive, loading && { opacity: 0.5 }]}
+                  onPress={() => !loading && setProfile({ language: lang })}
+                  disabled={loading}
                 >
                   <Text style={[styles.chipText, profile.language === lang && styles.chipTextActive]}>{lang}</Text>
                 </TouchableOpacity>
@@ -122,8 +154,8 @@ const OnboardingScreen = ({ navigation }: any) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Setup your profile</Text>
-        <Text style={styles.subtitle}>Step {step} of 5</Text>
+        <Text style={styles.title}>{t.setupProfile}</Text>
+        <Text style={styles.subtitle}>{t.step} {step} {t.of} 5</Text>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${(step / 5) * 100}%` }]} />
         </View>
@@ -137,13 +169,19 @@ const OnboardingScreen = ({ navigation }: any) => {
         {step > 1 ? (
           <TouchableOpacity style={styles.backButton} onPress={prevStep}>
             <ArrowLeft size={24} color="#666" />
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>{t.back}</Text>
           </TouchableOpacity>
         ) : <View />}
 
-        <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-          <Text style={styles.nextButtonText}>{step === 5 ? 'Finish' : 'Next'}</Text>
-          {step < 5 ? <ArrowRight size={24} color="#fff" /> : <Check size={24} color="#fff" />}
+        <TouchableOpacity 
+          style={[styles.nextButton, loading && { opacity: 0.7 }]} 
+          onPress={nextStep}
+          disabled={loading}
+        >
+          <Text style={styles.nextButtonText}>
+            {loading ? 'Saving...' : (step === 5 ? t.finish : t.next)}
+          </Text>
+          {!loading && (step < 5 ? <ArrowRight size={24} color="#fff" /> : <Check size={24} color="#fff" />)}
         </TouchableOpacity>
       </View>
     </View>

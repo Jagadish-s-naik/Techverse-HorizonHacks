@@ -1,5 +1,5 @@
-import { query } from '../config/db.js';
-import { generateDriverBullets, type DriverContext } from '../utils/ai.js';
+import { query } from '../config/db';
+import { generateDriverBullets, type DriverContext } from '../utils/ai';
 
 export interface ForecastInput {
   prices: number[];
@@ -77,5 +77,31 @@ export async function runForecastPipeline() {
        drivers = EXCLUDED.drivers`,
       [crop, mandi, forecast.band.low, forecast.band.high, forecast.trend, forecast.confidence, JSON.stringify(drivers)]
     );
+  }
+}
+
+export async function recordActuals() {
+  // 1. Get all forecasts from yesterday that don't have an actual price yet
+  const pending = await query(
+    `SELECT f.id, f.crop, f.mandi, f.forecast_date 
+     FROM forecasts f
+     LEFT JOIN forecast_actuals fa ON f.id = fa.forecast_id
+     WHERE fa.forecast_id IS NULL AND f.forecast_date < CURRENT_DATE`
+  );
+
+  for (const forecast of pending.rows) {
+    // 2. Check if we have the actual price for that date in mandi_prices
+    const actual = await query(
+      'SELECT price FROM mandi_prices WHERE crop = $1 AND mandi = $2 AND date = $3',
+      [forecast.crop, forecast.mandi, forecast.forecast_date]
+    );
+
+    if (actual.rows.length > 0) {
+      // 3. Record the actual price
+      await query(
+        'INSERT INTO forecast_actuals (forecast_id, actual_price) VALUES ($1, $2)',
+        [forecast.id, actual.rows[0].price]
+      );
+    }
   }
 }

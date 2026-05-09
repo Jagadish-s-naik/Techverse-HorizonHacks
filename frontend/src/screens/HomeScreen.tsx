@@ -3,15 +3,18 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, 
 import { useProfileStore } from '../store/useProfileStore';
 import { forecastService, communityService } from '../services/api';
 import ForecastCard from '../components/ForecastCard';
+import SimpleForecastView from '../components/SimpleForecastView';
 import DecisionSheet from '../components/DecisionSheet';
 import TrackRecordModal from '../components/TrackRecordModal';
 import * as Speech from 'expo-speech';
-import { Lightbulb, WifiOff } from 'lucide-react-native';
+import { Lightbulb, WifiOff, Layout, Type, User } from 'lucide-react-native';
 import { offlineStorage } from '../services/offlineStorage';
 import * as Network from 'expo-network';
+import { useTranslation, getLocalizedReadout } from '../utils/translations';
 
-const HomeScreen = () => {
-  const { profile, syncChanges, isSyncing } = useProfileStore();
+const HomeScreen = ({ navigation }: any) => {
+  const { profile, syncChanges, isSyncing, toggleSimpleMode } = useProfileStore();
+  const { t } = useTranslation();
   const [forecast, setForecast] = useState<any>(null);
   const [community, setCommunity] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -93,15 +96,20 @@ const HomeScreen = () => {
 
   const handleVoiceReadout = () => {
     if (!forecast) return;
-    const text = `Forecast for ${forecast.crop} in ${forecast.mandi}. 
-      Expected price is between ${forecast.price_low} and ${forecast.price_high} rupees per kilogram. 
-      The trend is ${forecast.trend}. 
-      Confidence is ${forecast.confidence} percent. 
-      Key drivers: ${forecast.drivers.join('. ')}`;
+    
+    const langMap: any = {
+      'English': 'en-IN',
+      'Hindi': 'hi-IN',
+      'Kannada': 'kn-IN',
+      'Marathi': 'mr-IN',
+      'Telugu': 'te-IN'
+    };
 
-    Speech.speak(text, {
-      language: profile.language === 'Kannada' ? 'kn-IN' : 'en-IN',
-      rate: 0.9
+    const localizedText = getLocalizedReadout(forecast, profile.language);
+
+    Speech.speak(localizedText, {
+      language: langMap[profile.language] || 'en-IN',
+      rate: 0.85 // Slightly slower for better clarity in regional languages
     });
   };
 
@@ -120,45 +128,75 @@ const HomeScreen = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeText}>Hello, Farmer</Text>
-          <Text style={styles.dateText}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.welcomeText}>{t.hello}, Farmer</Text>
+              <Text style={styles.dateText}>{new Date().toLocaleDateString(profile.language === 'English' ? 'en-IN' : 'hi-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+            </View>
+            <View style={styles.headerActions}>
+              <TouchableOpacity 
+                style={[styles.toggleButton, profile.isSimpleMode && styles.toggleButtonActive]} 
+                onPress={toggleSimpleMode}
+              >
+                {profile.isSimpleMode ? <Layout size={20} color="#2E7D32" /> : <Type size={20} color="#666" />}
+                <Text style={[styles.toggleButtonText, profile.isSimpleMode && styles.toggleButtonTextActive]}>
+                  {profile.isSimpleMode ? t.standard : t.simple}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.profileButton} 
+                onPress={() => navigation.navigate('Profile')}
+              >
+                <User size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
         {isOffline && (
           <View style={styles.offlineBanner}>
             <WifiOff size={16} color="#721c24" />
-            <Text style={styles.offlineText}>You are currently offline. Showing cached data.</Text>
+            <Text style={styles.offlineText}>{t.offlineMessage}</Text>
           </View>
         )}
 
         {isSyncing && (
           <View style={styles.syncIndicator}>
             <ActivityIndicator size="small" color="#2E7D32" />
-            <Text style={styles.syncText}>Syncing pending changes...</Text>
+            <Text style={styles.syncText}>{t.syncingMessage}</Text>
           </View>
         )}
 
         {forecast && (
-          <TouchableOpacity activeOpacity={0.9} onPress={() => setShowDecision(true)}>
-            <ForecastCard
+          profile.isSimpleMode ? (
+            <SimpleForecastView 
               data={forecast}
               onVoiceReadout={handleVoiceReadout}
               onTrackRecordPress={() => setShowTrackRecord(true)}
             />
-            {forecast.recommendation && (
-              <View style={styles.quickAction}>
-                <Lightbulb size={20} color="#2E7D32" />
-                <Text style={styles.quickActionText}>Tap to view recommended decision</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          ) : (
+            <TouchableOpacity activeOpacity={0.9} onPress={() => setShowDecision(true)}>
+              <ForecastCard
+                data={forecast}
+                onVoiceReadout={handleVoiceReadout}
+                onTrackRecordPress={() => setShowTrackRecord(true)}
+              />
+              {forecast.recommendation && (
+                <View style={styles.quickAction}>
+                  <Lightbulb size={20} color="#2E7D32" />
+                  <Text style={styles.quickActionText}>{t.tapToViewDecision}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )
         )}
 
         {community && (
           <View style={styles.communitySignal}>
-            <Text style={styles.communityTitle}>Community Signal</Text>
+            <Text style={styles.communityTitle}>{t.communitySignal}</Text>
             <Text style={styles.communityInfo}>
-              <Text style={styles.countText}>{community.count}</Text> farmers in your district plan to grow {community.crop} this season.
+              <Text style={styles.countText}>{community.count}</Text> {t.farmersInYourDistrict} {community.crop} {t.thisSeason}.
             </Text>
             <Text style={styles.implicationText}>{community.implication}</Text>
           </View>
@@ -206,6 +244,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 4,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  toggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  toggleButtonActive: {
+    borderColor: '#2E7D32',
+    backgroundColor: '#E8F5E9',
+  },
+  toggleButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+  toggleButtonTextActive: {
+    color: '#2E7D32',
   },
   quickAction: {
     flexDirection: 'row',

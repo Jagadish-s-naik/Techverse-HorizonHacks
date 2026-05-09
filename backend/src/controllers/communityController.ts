@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { query } from '../config/db.js';
+import { query } from '../config/db';
 
 export const getCommunitySignal = async (req: Request, res: Response) => {
   const { crop, district } = req.query;
