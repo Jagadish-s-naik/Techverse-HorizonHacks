@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { query } from '../config/db';
+import type { Request, Response } from 'express';
+import { query } from '../config/db.js';
 
 function getRecommendation(forecast: any, farmer: any) {
   const { trend, confidence } = forecast;

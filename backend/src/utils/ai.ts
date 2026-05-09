@@ -47,7 +47,7 @@ export async function generateDriverBullets(context: DriverContext): Promise<str
     });
 
     const content = response.content[0];
-    if (content.type === 'text') {
+    if (content && content.type === 'text') {
       return JSON.parse(content.text);
     }
     return ['Supply and demand changes', 'Weather impacts', 'Market conditions'];

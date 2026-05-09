@@ -1,5 +1,5 @@
-import { query } from '../config/db';
-import { generateDriverBullets, DriverContext } from '../utils/ai';
+import { query } from '../config/db.js';
+import { generateDriverBullets, type DriverContext } from '../utils/ai.js';
 
 export interface ForecastInput {
   prices: number[];
@@ -47,7 +47,7 @@ export async function runForecastPipeline() {
     
     if (priceData.rows.length < 14) continue;
     
-    const prices = priceData.rows.map(r => Number(r.price)).reverse();
+    const prices = priceData.rows.map((r: any) => Number(r.price)).reverse();
     const forecast = computeForecast(prices);
     
     // 3. Mock external data for MVP
@@ -59,7 +59,7 @@ export async function runForecastPipeline() {
       crop,
       district: mandi, // Using mandi as district proxy for MVP
       trend: forecast.trend,
-      ma7: prices[prices.length - 1],
+      ma7: prices[prices.length - 1] ?? 0,
       weatherSummary,
       headlines,
       language: 'English'

@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { query } from '../config/db';
+import type { Request, Response } from 'express';
+import { query } from '../config/db.js';
 
 export const createFarmer = async (req: Request, res: Response) => {
   const { crop, land_acres, has_irrigation, has_storage, mandi, district, language } = req.body;
