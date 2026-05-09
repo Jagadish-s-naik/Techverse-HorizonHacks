@@ -40,9 +40,24 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     await AsyncStorage.setItem('farmer_profile', JSON.stringify(profile));
   },
   loadProfile: async () => {
-    const data = await AsyncStorage.getItem('farmer_profile');
-    if (data) {
-      set({ profile: JSON.parse(data) });
+    try {
+      const data = await AsyncStorage.getItem('farmer_profile');
+      if (data) {
+        const parsed = JSON.parse(data);
+        // Explicitly cast booleans to prevent java.lang.String cannot be cast to java.lang.Boolean
+        set({
+          profile: {
+            ...get().profile,
+            ...parsed,
+            hasIrrigation: Boolean(parsed.hasIrrigation),
+            hasStorage: Boolean(parsed.hasStorage),
+            isOnboarded: Boolean(parsed.isOnboarded),
+            landSize: Number(parsed.landSize) || 1,
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
     }
   },
 }));
