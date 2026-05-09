@@ -4,6 +4,7 @@ import { useProfileStore } from '../store/useProfileStore';
 import { forecastService, communityService } from '../services/api';
 import ForecastCard from '../components/ForecastCard';
 import DecisionSheet from '../components/DecisionSheet';
+import TrackRecordModal from '../components/TrackRecordModal';
 import * as Speech from 'expo-speech';
 import { Lightbulb } from 'lucide-react-native';
 
@@ -14,6 +15,7 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showDecision, setShowDecision] = useState(false);
+  const [showTrackRecord, setShowTrackRecord] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -100,7 +102,7 @@ const HomeScreen = () => {
             <ForecastCard
               data={forecast}
               onVoiceReadout={handleVoiceReadout}
-              onTrackRecordPress={() => { }}
+              onTrackRecordPress={() => setShowTrackRecord(true)}
             />
             {forecast.recommendation && (
               <View style={styles.quickAction}>
@@ -128,6 +130,13 @@ const HomeScreen = () => {
         visible={showDecision}
         onClose={() => setShowDecision(false)}
         recommendation={forecast?.recommendation}
+      />
+
+      <TrackRecordModal
+        visible={showTrackRecord}
+        onClose={() => setShowTrackRecord(false)}
+        crop={profile.crop}
+        mandi={profile.mandi}
       />
     </View>
   );

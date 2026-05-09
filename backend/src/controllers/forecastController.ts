@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { query } from '../config/db.js';
+import redis from '../config/redis.js';
 
 function getRecommendation(forecast: any, farmer: any) {
   const { trend, confidence } = forecast;
@@ -45,16 +46,24 @@ export const getLatestForecast = async (req: Request, res: Response) => {
   }
   
   try {
-    const forecastResult = await query(
-      'SELECT * FROM forecasts WHERE crop = $1 AND mandi = $2 ORDER BY forecast_date DESC LIMIT 1',
-      [crop, mandi]
-    );
-    
-    if (forecastResult.rows.length === 0) {
-      return res.status(404).json({ error: 'No forecast found' });
+    const cacheKey = `forecast:${crop}:${mandi}`;
+    let forecast = await redis.get<any>(cacheKey);
+
+    if (!forecast) {
+      const forecastResult = await query(
+        'SELECT * FROM forecasts WHERE crop = $1 AND mandi = $2 ORDER BY forecast_date DESC LIMIT 1',
+        [crop, mandi]
+      );
+      
+      if (forecastResult.rows.length === 0) {
+        return res.status(404).json({ error: 'No forecast found' });
+      }
+
+      forecast = forecastResult.rows[0];
+      // Cache for 1 hour
+      await redis.set(cacheKey, forecast, { ex: 3600 });
     }
 
-    const forecast = forecastResult.rows[0];
     let recommendation = null;
 
     if (farmerId) {
