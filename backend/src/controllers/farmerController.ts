@@ -10,9 +10,9 @@ export const createFarmer = async (req: Request, res: Response) => {
       [crop, land_acres, has_irrigation, has_storage, mandi, district, language]
     );
     res.status(201).json({ id: result.rows[0].id });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating farmer:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
 
@@ -45,8 +45,13 @@ export const updateFarmer = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Farmer not found' });
     }
     res.json(result.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating farmer:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Request body:', req.body);
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      message: error.message,
+      detail: error.detail // Useful for DB errors
+    });
   }
 };

@@ -1,10 +1,14 @@
 import axios from 'axios';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+console.log('API_BASE_URL being used:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000, // 10 second timeout
+  headers: {
+    'ngrok-skip-browser-warning': '69420',
+  },
 });
 
 export const farmerService = {

@@ -56,16 +56,24 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     const networkState = await Network.getNetworkStateAsync();
     const online = networkState.isConnected && networkState.isInternetReachable;
 
-    if (online && profile.id) {
+    if (online && profile.id && !profile.id.startsWith('local_')) {
       try {
-        await farmerService.updateProfile(profile.id, profile);
+        await farmerService.updateProfile(profile.id, {
+          crop: profile.crop,
+          land_acres: profile.landSize,
+          has_irrigation: profile.hasIrrigation,
+          has_storage: profile.hasStorage,
+          mandi: profile.mandi,
+          district: profile.district,
+          language: profile.language
+        });
         console.log('Profile synced with backend');
       } catch (error) {
         console.error('Failed to sync profile, queuing for later:', error);
         await offlineStorage.addToSyncQueue('UPDATE_PROFILE', profile);
       }
     } else if (profile.id) {
-      console.log('Offline, queuing profile update');
+      console.log('Offline or Local ID, queuing profile update');
       await offlineStorage.addToSyncQueue('UPDATE_PROFILE', profile);
     }
   },
@@ -143,7 +151,32 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       try {
         const payload = JSON.parse(item.payload);
         if (item.action === 'UPDATE_PROFILE' && payload.id) {
-          await farmerService.updateProfile(payload.id, payload);
+          if (payload.id.startsWith('local_')) {
+            // Promote local profile to backend
+            const res = await farmerService.createProfile({
+              crop: payload.crop,
+              land_acres: payload.landSize,
+              has_irrigation: payload.hasIrrigation,
+              has_storage: payload.hasStorage,
+              mandi: payload.mandi,
+              district: payload.district,
+              language: payload.language
+            });
+            // Update local state with new ID
+            const newProfile = { ...payload, id: res.data.id };
+            set({ profile: newProfile });
+            await AsyncStorage.setItem('farmer_profile', JSON.stringify(newProfile));
+          } else {
+            await farmerService.updateProfile(payload.id, {
+              crop: payload.crop,
+              land_acres: payload.landSize,
+              has_irrigation: payload.hasIrrigation,
+              has_storage: payload.hasStorage,
+              mandi: payload.mandi,
+              district: payload.district,
+              language: payload.language
+            });
+          }
         }
         await offlineStorage.removeFromSyncQueue(item.id);
       } catch (error) {
