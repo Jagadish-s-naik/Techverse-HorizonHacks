@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 
+import { useTranslation } from '../utils/translations';
+
 interface MarketItem {
   crop: string;
   price: number;
@@ -15,11 +17,28 @@ interface MarketOverviewProps {
 }
 
 const MarketOverview: React.FC<MarketOverviewProps> = ({ items, onCropPress }) => {
+  const { t, translate, language } = useTranslation();
+  const [translatedCrops, setTranslatedCrops] = React.useState<Record<string, string>>({});
+
+  React.useEffect(() => {
+    const translateCrops = async () => {
+      const crops = items.map(item => item.crop);
+      const translated = await translate(crops);
+      const mapping: Record<string, string> = {};
+      crops.forEach((crop, i) => {
+        mapping[crop] = translated[i];
+      });
+      setTranslatedCrops(mapping);
+    };
+
+    translateCrops();
+  }, [items, language]);
+
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Market Overview (Live ₹/kg)</Text>
+      <Text style={styles.title}>{t.marketOverview || 'Market Overview'} (Live ₹/kg)</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {items.map((item) => (
           <TouchableOpacity 
@@ -27,7 +46,9 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ items, onCropPress }) =
             style={styles.card}
             onPress={() => onCropPress && onCropPress(item.crop)}
           >
-            <Text style={styles.cropName}>{capitalize(item.crop)}</Text>
+            <Text style={styles.cropName}>
+              {capitalize(translatedCrops[item.crop] || item.crop)}
+            </Text>
             <Text style={styles.price}>
               ₹{typeof item.price === 'number' ? item.price.toFixed(2) : 'N/A'}
             </Text>

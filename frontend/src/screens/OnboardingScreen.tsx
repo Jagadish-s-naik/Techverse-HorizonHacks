@@ -11,12 +11,14 @@ const LANGUAGES = ['English', 'Hindi', 'Kannada', 'Marathi', 'Telugu'];
 
 const OnboardingScreen = ({ navigation }: any) => {
   const { profile, setProfile, createProfile } = useProfileStore();
-  const { t } = useTranslation();
+  const { t, translate, language } = useTranslation();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [fetchingOptions, setFetchingOptions] = useState(true);
   const [crops, setCrops] = useState<string[]>(DEFAULT_CROPS);
   const [mandis, setMandis] = useState<string[]>(DEFAULT_MANDIS);
+  const [translatedCrops, setTranslatedCrops] = useState<Record<string, string>>({});
+  const [translatedMandis, setTranslatedMandis] = useState<Record<string, string>>({});
 
   React.useEffect(() => {
     const fetchOptions = async () => {
@@ -35,6 +37,27 @@ const OnboardingScreen = ({ navigation }: any) => {
     fetchOptions();
   }, []);
 
+  React.useEffect(() => {
+    const translateOptions = async () => {
+      const [tCrops, tMandis] = await Promise.all([
+        translate(crops),
+        translate(mandis)
+      ]);
+
+      const cropMap: Record<string, string> = {};
+      crops.forEach((c, i) => cropMap[c] = tCrops[i]);
+      setTranslatedCrops(cropMap);
+
+      const mandiMap: Record<string, string> = {};
+      mandis.forEach((m, i) => mandiMap[m] = tMandis[i]);
+      setTranslatedMandis(mandiMap);
+    };
+
+    if (!fetchingOptions) {
+      translateOptions();
+    }
+  }, [crops, mandis, language, fetchingOptions]);
+
   const nextStep = () => {
     if (step < 5) setStep(step + 1);
     else handleFinish();
@@ -47,7 +70,7 @@ const OnboardingScreen = ({ navigation }: any) => {
   const handleFinish = async () => {
     console.log('Onboarding: handleFinish triggered');
     setLoading(true);
-    
+
     // Safety timer to force navigation if something hangs
     const forceNavTimer = setTimeout(() => {
       console.log('Onboarding: Force navigation triggered after timeout');
@@ -58,10 +81,10 @@ const OnboardingScreen = ({ navigation }: any) => {
     try {
       console.log('Onboarding: Saving profile state...');
       setProfile({ isOnboarded: true });
-      
+
       console.log('Onboarding: Creating profile on backend...');
       await createProfile();
-      
+
       clearTimeout(forceNavTimer);
       console.log('Onboarding: Complete, replacing screen with Home');
       navigation.replace('Home');
@@ -100,7 +123,9 @@ const OnboardingScreen = ({ navigation }: any) => {
                     style={[styles.chip, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipActive]}
                     onPress={() => setProfile({ crop: crop.toLowerCase() })}
                   >
-                    <Text style={[styles.chipText, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipTextActive]}>{capitalize(crop)}</Text>
+                    <Text style={[styles.chipText, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipTextActive]}>
+                      {capitalize(translatedCrops[crop] || crop)}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -123,8 +148,8 @@ const OnboardingScreen = ({ navigation }: any) => {
           <View style={styles.stepContainer}>
             <View style={styles.toggleRow}>
               <Text style={styles.label}>{t.irrigationQuestion}</Text>
-              <Switch 
-                value={profile.hasIrrigation} 
+              <Switch
+                value={profile.hasIrrigation}
                 onValueChange={(val) => setProfile({ hasIrrigation: val })}
                 trackColor={{ false: "#ddd", true: "#A5D6A7" }}
                 thumbColor={profile.hasIrrigation ? "#2E7D32" : "#f4f3f4"}
@@ -132,8 +157,8 @@ const OnboardingScreen = ({ navigation }: any) => {
             </View>
             <View style={styles.toggleRow}>
               <Text style={styles.label}>{t.storageQuestion}</Text>
-              <Switch 
-                value={profile.hasStorage} 
+              <Switch
+                value={profile.hasStorage}
                 onValueChange={(val) => setProfile({ hasStorage: val })}
                 trackColor={{ false: "#ddd", true: "#A5D6A7" }}
                 thumbColor={profile.hasStorage ? "#2E7D32" : "#f4f3f4"}
@@ -153,7 +178,9 @@ const OnboardingScreen = ({ navigation }: any) => {
                   style={[styles.listItem, profile.mandi.toLowerCase() === mandi.toLowerCase() && styles.listItemActive]}
                   onPress={() => setProfile({ mandi: mandi.toLowerCase(), district: mandi.toLowerCase() })}
                 >
-                  <Text style={[styles.listItemText, profile.mandi.toLowerCase() === mandi.toLowerCase() && styles.listItemTextActive]}>{capitalize(mandi)}</Text>
+                  <Text style={[styles.listItemText, profile.mandi.toLowerCase() === mandi.toLowerCase() && styles.listItemTextActive]}>
+                    {capitalize(translatedMandis[mandi] || mandi)}
+                  </Text>
                   {profile.mandi.toLowerCase() === mandi.toLowerCase() && <Check size={20} color="#2E7D32" />}
                 </TouchableOpacity>
               ))}
@@ -207,8 +234,8 @@ const OnboardingScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         ) : <View />}
 
-        <TouchableOpacity 
-          style={[styles.nextButton, loading && { opacity: 0.7 }]} 
+        <TouchableOpacity
+          style={[styles.nextButton, loading && { opacity: 0.7 }]}
           onPress={nextStep}
           disabled={loading}
         >

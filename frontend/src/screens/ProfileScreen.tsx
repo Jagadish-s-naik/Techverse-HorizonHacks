@@ -11,10 +11,12 @@ const LANGUAGES = ['English', 'Hindi', 'Kannada', 'Marathi', 'Telugu'];
 
 const ProfileScreen = ({ navigation }: any) => {
   const { profile, setProfile, saveProfile } = useProfileStore();
-  const { t } = useTranslation();
+  const { t, translate, language } = useTranslation();
   const [crops, setCrops] = React.useState<string[]>(DEFAULT_CROPS);
   const [mandis, setMandis] = React.useState<string[]>(DEFAULT_MANDIS);
   const [loadingOptions, setLoadingOptions] = React.useState(true);
+  const [translatedCrops, setTranslatedCrops] = React.useState<Record<string, string>>({});
+  const [translatedMandis, setTranslatedMandis] = React.useState<Record<string, string>>({});
 
   React.useEffect(() => {
     const fetchOptions = async () => {
@@ -30,6 +32,27 @@ const ProfileScreen = ({ navigation }: any) => {
     };
     fetchOptions();
   }, []);
+
+  React.useEffect(() => {
+    const translateOptions = async () => {
+      const [tCrops, tMandis] = await Promise.all([
+        translate(crops),
+        translate(mandis)
+      ]);
+      
+      const cropMap: Record<string, string> = {};
+      crops.forEach((c, i) => cropMap[c] = tCrops[i]);
+      setTranslatedCrops(cropMap);
+
+      const mandiMap: Record<string, string> = {};
+      mandis.forEach((m, i) => mandiMap[m] = tMandis[i]);
+      setTranslatedMandis(mandiMap);
+    };
+
+    if (!loadingOptions) {
+      translateOptions();
+    }
+  }, [crops, mandis, language, loadingOptions]);
 
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -69,7 +92,9 @@ const ProfileScreen = ({ navigation }: any) => {
                 style={[styles.chip, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipActive]}
                 onPress={() => setProfile({ crop: crop.toLowerCase() })}
               >
-                <Text style={[styles.chipText, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipTextActive]}>{capitalize(crop)}</Text>
+                <Text style={[styles.chipText, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipTextActive]}>
+                  {capitalize(translatedCrops[crop] || crop)}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -87,7 +112,9 @@ const ProfileScreen = ({ navigation }: any) => {
                 style={[styles.chip, profile.mandi.toLowerCase() === mandi.toLowerCase() && styles.chipActive]}
                 onPress={() => setProfile({ mandi: mandi.toLowerCase(), district: mandi.toLowerCase() })}
               >
-                <Text style={[styles.chipText, profile.mandi.toLowerCase() === mandi.toLowerCase() && styles.chipTextActive]}>{capitalize(mandi)}</Text>
+                <Text style={[styles.chipText, profile.mandi.toLowerCase() === mandi.toLowerCase() && styles.chipTextActive]}>
+                  {capitalize(translatedMandis[mandi] || mandi)}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>

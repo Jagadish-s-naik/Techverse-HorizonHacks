@@ -7,6 +7,7 @@ import forecastRoutes from './routes/forecastRoutes.js';
 import communityRoutes from './routes/communityRoutes.js';
 import smsRoutes from './routes/smsRoutes.js';
 import metaRoutes from './routes/metaRoutes.js';
+import translateRoutes from './routes/translateRoutes.js';
 
 import cron from 'node-cron';
 import { runForecastPipeline, recordActuals } from './services/forecastService.js';
@@ -41,6 +42,7 @@ app.use('/api/forecasts', forecastRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/sms', smsRoutes);
 app.use('/api/meta', metaRoutes);
+app.use('/api/translate', translateRoutes);
 
 // Daily Cron Job at 00:00
 cron.schedule('0 0 * * *', async () => {

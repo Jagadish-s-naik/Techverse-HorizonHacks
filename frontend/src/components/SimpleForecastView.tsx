@@ -10,8 +10,53 @@ interface SimpleForecastViewProps {
 }
 
 const SimpleForecastView = ({ data, onVoiceReadout, onTrackRecordPress }: SimpleForecastViewProps) => {
-  const { t } = useTranslation();
+  const { t, translate, language } = useTranslation();
+  const [translatedData, setTranslatedData] = React.useState<any>(null);
+  
   const hasForecast = data.price_low !== undefined && data.price_high !== undefined;
+
+  React.useEffect(() => {
+    const translateContent = async () => {
+      if (!data) return;
+
+      const toTranslate = [
+        data.crop,
+        data.mandi,
+        data.recommendation?.action,
+        data.recommendation?.rationale,
+        ...(data.drivers || [])
+      ];
+
+      const results = await translate(toTranslate);
+      
+      let index = 0;
+      const getNext = () => results[index++];
+      
+      const newData = { ...data };
+      newData.crop = getNext();
+      newData.mandi = getNext();
+      
+      if (data.recommendation) {
+        newData.recommendation = { 
+          ...data.recommendation,
+          action: getNext(),
+          rationale: getNext()
+        };
+      } else {
+        index += 2; // Skip action and rationale
+      }
+      
+      if (data.drivers) {
+        newData.drivers = data.drivers.map(() => getNext());
+      }
+
+      setTranslatedData(newData);
+    };
+
+    translateContent();
+  }, [data, language]);
+
+  const displayData = translatedData || data;
 
   return (
     <View style={styles.container}>
@@ -23,37 +68,37 @@ const SimpleForecastView = ({ data, onVoiceReadout, onTrackRecordPress }: Simple
       {/* Bubble 1: Basic Info */}
       <View style={styles.bubbleLeft}>
         <Text style={styles.bubbleText}>
-          {t.forecastFor} {data.crop} {t.in} {data.mandi}:{"\n"}
+          {t.forecastFor} {displayData.crop} {t.in} {displayData.mandi}:{"\n"}
           {hasForecast ? (
             <>
-              {t.expectedPriceIs}: ₹{data.price_low} - ₹{data.price_high} / kg{"\n"}
-              {t.trendIs}: {data.trend === 'up' ? `↗️ ${t.up.toUpperCase()}` : data.trend === 'down' ? `↘️ ${t.down.toUpperCase()}` : `➡️ ${t.stable.toUpperCase()}`}
+              {t.expectedPriceIs}: ₹{displayData.price_low} - ₹{displayData.price_high} / kg{"\n"}
+              {t.trendIs}: {displayData.trend === 'up' ? `↗️ ${t.up.toUpperCase()}` : displayData.trend === 'down' ? `↘️ ${t.down.toUpperCase()}` : `➡️ ${t.stable.toUpperCase()}`}
             </>
           ) : (
             <>
-              {t.livePrice}: {data.todayPrice ? `₹${data.todayPrice} / kg` : 'N/A'}
+              {t.livePrice}: {displayData.todayPrice ? `₹${displayData.todayPrice} / kg` : 'N/A'}
             </>
           )}
         </Text>
       </View>
 
       {/* Bubble 2: Recommendation */}
-      {hasForecast && data.recommendation && (
+      {hasForecast && displayData.recommendation && (
         <View style={styles.bubbleLeft}>
           <Text style={styles.bubbleText}>
-            {t.adviceLabel}: {data.recommendation.action}{"\n"}
-            {t.whyLabel}: {data.recommendation.rationale}
+            {t.adviceLabel}: {displayData.recommendation.action}{"\n"}
+            {t.whyLabel}: {displayData.recommendation.rationale}
           </Text>
         </View>
       )}
 
       {/* Bubble 3: Confidence & Drivers */}
-      {hasForecast && data.confidence !== undefined && data.drivers && (
+      {hasForecast && displayData.confidence !== undefined && displayData.drivers && (
         <View style={styles.bubbleLeft}>
           <Text style={styles.bubbleText}>
-            {t.confidenceIs.toUpperCase()}: {data.confidence}%{"\n"}
+            {t.confidenceIs.toUpperCase()}: {displayData.confidence}%{"\n"}
             {t.keyFactors.toUpperCase()}:{"\n"}
-            {data.drivers.map((d: string, i: number) => `• ${d}${i < data.drivers.length - 1 ? '\n' : ''}`)}
+            {displayData.drivers.map((d: string, i: number) => `• ${d}${i < displayData.drivers.length - 1 ? '\n' : ''}`)}
           </Text>
         </View>
       )}

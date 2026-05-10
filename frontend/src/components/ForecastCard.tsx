@@ -20,7 +20,39 @@ interface ForecastCardProps {
 }
 
 const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCardProps) => {
-  const { t } = useTranslation();
+  const { t, language, translate } = useTranslation();
+  const [translatedData, setTranslatedData] = React.useState({
+    crop: data.crop,
+    mandi: data.mandi,
+    drivers: data.drivers || []
+  });
+
+  React.useEffect(() => {
+    const performTranslation = async () => {
+      if (language === 'English') {
+        setTranslatedData({
+          crop: data.crop,
+          mandi: data.mandi,
+          drivers: data.drivers || []
+        });
+        return;
+      }
+
+      const [translatedCrop, translatedMandi, translatedDrivers] = await Promise.all([
+        translate(data.crop),
+        translate(data.mandi),
+        translate(data.drivers || [])
+      ]);
+
+      setTranslatedData({
+        crop: translatedCrop as string,
+        mandi: translatedMandi as string,
+        drivers: translatedDrivers as string[]
+      });
+    };
+
+    performTranslation();
+  }, [data.crop, data.mandi, data.drivers, language]);
   
   // Fallbacks for missing data
   const hasForecast = data.price_low !== undefined && data.price_high !== undefined;
@@ -32,8 +64,8 @@ const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCard
     <View style={styles.card}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.cropTitle}>{data.crop.toUpperCase()}</Text>
-          <Text style={styles.mandiSubtitle}>{data.mandi} {t.mandiLabel}</Text>
+          <Text style={styles.cropTitle}>{translatedData.crop.toUpperCase()}</Text>
+          <Text style={styles.mandiSubtitle}>{translatedData.mandi} {t.mandiLabel}</Text>
         </View>
         <TouchableOpacity onPress={onVoiceReadout} style={styles.voiceButton}>
           <Volume2 size={24} color="#2E7D32" />
@@ -70,10 +102,10 @@ const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCard
         </View>
       )}
 
-      {hasForecast && data.drivers && data.drivers.length > 0 && (
+      {hasForecast && translatedData.drivers && translatedData.drivers.length > 0 && (
         <View style={styles.driversContainer}>
           <Text style={styles.driversTitle}>{t.keyPriceDrivers}</Text>
-          {data.drivers.map((driver, index) => (
+          {translatedData.drivers.map((driver, index) => (
             <View key={index} style={styles.driverItem}>
               <View style={styles.bullet} />
               <Text style={styles.driverText}>{driver}</Text>

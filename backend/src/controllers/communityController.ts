@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { query } from '../config/db.js';
+import { translateText } from '../services/translateService.js';
 
 export const getCommunitySignal = async (req: Request, res: Response) => {
   const { crop, district } = req.query;
@@ -23,11 +24,26 @@ export const getCommunitySignal = async (req: Request, res: Response) => {
       implication = "Low local supply reported in our network.";
     }
     
+    const farmerId = req.query.farmerId as string;
+    let finalImplication = implication;
+
+    if (farmerId) {
+      try {
+        const farmerRes = await query('SELECT language FROM farmers WHERE id = $1', [farmerId]);
+        const language = farmerRes.rows[0]?.language || 'English';
+        if (language !== 'English') {
+          finalImplication = await translateText(implication, language) as string;
+        }
+      } catch (e) {
+        console.warn('Failed to translate community implication:', e);
+      }
+    }
+
     res.json({
       count,
       crop,
       district,
-      implication
+      implication: finalImplication
     });
   } catch (error) {
     console.error('Error fetching community signal:', error);

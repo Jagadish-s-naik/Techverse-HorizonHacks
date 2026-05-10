@@ -37,4 +37,9 @@ export const marketService = {
   getOverview: () => api.get('/meta/market/overview'),
 };
 
+export const translateService = {
+  translate: (text: string | string[], targetLanguage: string) => 
+    api.post('/translate', { text, targetLanguage }),
+};
+
 export default api;

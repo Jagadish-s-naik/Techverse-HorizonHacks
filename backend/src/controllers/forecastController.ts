@@ -3,6 +3,7 @@ import { query } from '../config/db.js';
 import redis from '../config/redis.js';
 import { processTarget } from '../services/forecastService.js';
 import { generateTailoredRecommendation } from '../utils/ai.js';
+import { translateText } from '../services/translateService.js';
 
 function getRecommendation(forecast: any, farmer: any) {
   const { trend, confidence } = forecast;
@@ -87,8 +88,13 @@ export const getLatestForecast = async (req: Request, res: Response) => {
               'SELECT price FROM mandi_prices WHERE crop = $1 AND mandi = $2 ORDER BY date DESC LIMIT 1',
               [crop, mandi]
             );
+            
+            const farmerResult = await query('SELECT language FROM farmers WHERE id = $1', [farmerId]);
+            const language = farmerResult.rows[0]?.language || 'English';
+            const translatedError = language !== 'English' ? await translateText(genError.message, language) : genError.message;
+
             return res.json({ 
-              error: genError.message, 
+              error: translatedError, 
               status: 'insufficient_data',
               crop,
               mandi,
@@ -96,7 +102,12 @@ export const getLatestForecast = async (req: Request, res: Response) => {
             });
           }
           
-          return res.status(500).json({ error: genError.message || 'Failed to generate forecast for new crop' });
+          const farmerResult = await query('SELECT language FROM farmers WHERE id = $1', [farmerId]);
+          const language = farmerResult.rows[0]?.language || 'English';
+          const errorMsg = genError.message || 'Failed to generate forecast for new crop';
+          const translatedError = language !== 'English' ? await translateText(errorMsg, language) : errorMsg;
+          
+          return res.status(500).json({ error: translatedError });
         }
       } else {
         forecast = forecastResult.rows[0];
@@ -149,7 +160,51 @@ export const getLatestForecast = async (req: Request, res: Response) => {
       recommendation = getRecommendation(forecast, farmerProfile);
     }
 
-    res.json({ ...forecast, todayPrice, recommendation });
+    // 5. Apply translations for the response
+    const language = farmerProfile?.language || 'English';
+    
+    // Translate the recommendation
+    if (language !== 'English') {
+      try {
+        const [translatedAction, translatedRationale, translatedAlternative] = await Promise.all([
+          translateText(recommendation.action, language),
+          translateText(recommendation.rationale, language),
+          translateText(recommendation.alternative, language)
+        ]);
+        
+        recommendation.action = translatedAction as string;
+        recommendation.rationale = translatedRationale as string;
+        recommendation.alternative = translatedAlternative as string;
+      } catch (e) {
+        console.warn('Failed to translate recommendation:', e);
+      }
+    }
+
+    // Translate the drivers (bullet points)
+    let finalDrivers = forecast.drivers;
+    if (typeof finalDrivers === 'string') {
+      try {
+        finalDrivers = JSON.parse(finalDrivers);
+      } catch (e) {
+        finalDrivers = [];
+      }
+    }
+
+    if (language !== 'English' && Array.isArray(finalDrivers) && finalDrivers.length > 0) {
+      try {
+        const translatedDrivers = await translateText(finalDrivers, language);
+        finalDrivers = translatedDrivers;
+      } catch (e) {
+        console.warn('Failed to translate drivers:', e);
+      }
+    }
+
+    res.json({ 
+      ...forecast, 
+      drivers: finalDrivers,
+      todayPrice, 
+      recommendation 
+    });
   } catch (error) {
     console.error('Error fetching forecast:', error);
     res.status(500).json({ error: 'Internal server error' });

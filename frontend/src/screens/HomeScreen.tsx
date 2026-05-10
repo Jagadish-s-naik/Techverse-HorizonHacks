@@ -15,6 +15,43 @@ import { useTranslation, getLocalizedReadout } from '../utils/translations';
 
 import LoadingSkeleton, { MarketScrollerSkeleton } from '../components/LoadingSkeleton';
 
+const CommunitySignal = ({ data }: { data: any }) => {
+  const { t, translate, language } = useTranslation();
+  const [translatedData, setTranslatedData] = useState<any>(null);
+
+  useEffect(() => {
+    const translateContent = async () => {
+      if (!data) return;
+      try {
+        const results = await translate([data.crop, data.implication]);
+        if (Array.isArray(results)) {
+          setTranslatedData({
+            ...data,
+            crop: results[0],
+            implication: results[1]
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to translate community signal', e);
+      }
+    };
+    translateContent();
+  }, [data, language]);
+
+  const displayData = translatedData || data;
+  if (!displayData) return null;
+
+  return (
+    <View style={styles.communitySignal}>
+      <Text style={styles.communityTitle}>{t.communitySignal}</Text>
+      <Text style={styles.communityInfo}>
+        <Text style={styles.countText}>{displayData.count}</Text> {t.farmersInYourDistrict} {displayData.crop} {t.thisSeason}.
+      </Text>
+      <Text style={styles.implicationText}>{displayData.implication}</Text>
+    </View>
+  );
+};
+
 const HomeScreen = ({ navigation }: any) => {
   // ... existing states ...
   const { profile, syncChanges, isSyncing, toggleSimpleMode } = useProfileStore();
@@ -91,7 +128,7 @@ const HomeScreen = ({ navigation }: any) => {
     fetchData();
   };
 
-  const handleVoiceReadout = () => {
+  const handleVoiceReadout = async () => {
     if (!forecast) return;
     
     const langMap: any = {
@@ -102,7 +139,7 @@ const HomeScreen = ({ navigation }: any) => {
       'Telugu': 'te-IN'
     };
 
-    const localizedText = getLocalizedReadout(forecast, profile.language);
+    const localizedText = await getLocalizedReadout(forecast, profile.language);
 
     Speech.speak(localizedText, {
       language: langMap[profile.language] || 'en-IN',
@@ -123,8 +160,17 @@ const HomeScreen = ({ navigation }: any) => {
         <View style={styles.welcomeSection}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.welcomeText}>{t.hello}, Farmer</Text>
-              <Text style={styles.dateText}>{new Date().toLocaleDateString(profile.language === 'English' ? 'en-IN' : 'hi-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+              <Text style={styles.welcomeText}>{t.hello}, {profile.name || 'Farmer'}</Text>
+              <Text style={styles.dateText}>
+                {new Date().toLocaleDateString(
+                  profile.language === 'English' ? 'en-IN' : 
+                  profile.language === 'Hindi' ? 'hi-IN' : 
+                  profile.language === 'Kannada' ? 'kn-IN' : 
+                  profile.language === 'Marathi' ? 'mr-IN' : 
+                  profile.language === 'Telugu' ? 'te-IN' : 'en-IN', 
+                  { weekday: 'long', day: 'numeric', month: 'long' }
+                )}
+              </Text>
             </View>
             <View style={styles.headerActions}>
               <TouchableOpacity 
@@ -206,13 +252,7 @@ const HomeScreen = ({ navigation }: any) => {
         )}
 
         {community && (
-          <View style={styles.communitySignal}>
-            <Text style={styles.communityTitle}>{t.communitySignal}</Text>
-            <Text style={styles.communityInfo}>
-              <Text style={styles.countText}>{community.count}</Text> {t.farmersInYourDistrict} {community.crop} {t.thisSeason}.
-            </Text>
-            <Text style={styles.implicationText}>{community.implication}</Text>
-          </View>
+          <CommunitySignal data={community} />
         )}
 
         <View style={{ height: 40 }} />

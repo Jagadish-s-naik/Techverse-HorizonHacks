@@ -16,8 +16,36 @@ interface DecisionSheetProps {
 }
 
 const DecisionSheet = ({ visible, onClose, recommendation }: DecisionSheetProps) => {
-  const { t } = useTranslation();
-  if (!recommendation) return null;
+  const { t, language, translate } = useTranslation();
+  const [translatedRec, setTranslatedRec] = React.useState(recommendation);
+
+  React.useEffect(() => {
+    if (!recommendation) return;
+
+    const performTranslation = async () => {
+      if (language === 'English') {
+        setTranslatedRec(recommendation);
+        return;
+      }
+
+      const [translatedAction, translatedRationale, translatedAlternative] = await Promise.all([
+        translate(recommendation.action),
+        translate(recommendation.rationale),
+        translate(recommendation.alternative)
+      ]);
+
+      setTranslatedRec({
+        ...recommendation,
+        action: translatedAction as string,
+        rationale: translatedRationale as string,
+        alternative: translatedAlternative as string
+      });
+    };
+
+    performTranslation();
+  }, [recommendation, language]);
+
+  if (!recommendation || !translatedRec) return null;
 
   const riskColors = {
     safe: '#2E7D32',
@@ -60,7 +88,7 @@ const DecisionSheet = ({ visible, onClose, recommendation }: DecisionSheetProps)
                   </View>
                 )}
               </View>
-              <Text style={styles.actionText}>{recommendation.action}</Text>
+              <Text style={styles.actionText}>{translatedRec.action}</Text>
             </View>
 
             <View style={styles.section}>
@@ -68,7 +96,7 @@ const DecisionSheet = ({ visible, onClose, recommendation }: DecisionSheetProps)
                 <Info size={18} color="#2E7D32" />
                 <Text style={styles.sectionTitle}>{t.whyRecommendThis}</Text>
               </View>
-              <Text style={styles.rationaleText}>{recommendation.rationale}</Text>
+              <Text style={styles.rationaleText}>{translatedRec.rationale}</Text>
             </View>
 
             <View style={styles.section}>
@@ -76,7 +104,7 @@ const DecisionSheet = ({ visible, onClose, recommendation }: DecisionSheetProps)
                 <ArrowRight size={18} color="#666" />
                 <Text style={styles.sectionTitle}>{t.alternativeAction}</Text>
               </View>
-              <Text style={styles.alternativeText}>{recommendation.alternative}</Text>
+              <Text style={styles.alternativeText}>{translatedRec.alternative}</Text>
             </View>
 
             <TouchableOpacity style={styles.doneButton} onPress={onClose}>

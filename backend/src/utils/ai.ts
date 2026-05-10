@@ -14,7 +14,7 @@ export interface DriverContext {
   ma7: number;
   weatherSummary: string;
   headlines: string[];
-  language: string;
+  language?: string;
 }
 
 export async function generateDriverBullets(context: DriverContext): Promise<string[]> {
@@ -34,7 +34,7 @@ export async function generateDriverBullets(context: DriverContext): Promise<str
     - Be one sentence, under 15 words
     - Start with the cause, end with the price effect
     - Use plain language a farmer would understand
-    - Be in ${context.language}
+    - Be in English
     
     Return only a JSON array of 3 strings. No preamble.
   `;
@@ -71,6 +71,7 @@ export interface RecommendationContext {
   todayPrice: number;
   has_storage: boolean;
   land_acres: number;
+  language?: string;
 }
 
 export async function generateTailoredRecommendation(context: RecommendationContext): Promise<any> {
@@ -94,14 +95,16 @@ export async function generateTailoredRecommendation(context: RecommendationCont
     4. rationale: 2-3 sentences explaining why, using the second person voice (e.g., "Since you have storage...", "You can maximize your profit...").
     5. alternative: A fallback option using the second person voice.
     
-    IMPORTANT: Always address the farmer directly as "you" or "your".
-    Return ONLY JSON. No preamble.
+    IMPORTANT: 
+    - Always address the farmer directly as "you" or "your".
+    - The output (action, rationale, alternative) MUST be in English.
+    - Return ONLY JSON. No preamble.
   `;
 
   try {
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
-      max_tokens: 300,
+      max_tokens: 500,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -119,7 +122,7 @@ export async function generateTailoredRecommendation(context: RecommendationCont
     console.error('Error generating AI recommendation:', error);
   }
 
-  // Fallback if AI fails
+  // Fallback if AI fails - we will translate this fallback in the controller
   return {
     action: context.trend === 'up' ? 'Hold your stock' : 'Sell your crop',
     risk: 'moderate',

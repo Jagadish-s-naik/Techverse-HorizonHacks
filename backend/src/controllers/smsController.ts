@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { smsService } from '../services/smsService.js';
 import { query } from '../config/db.js';
+import { translateText } from '../services/translateService.js';
 
 export const simulateReceiveSMS = async (req: Request, res: Response) => {
   const { phoneNumber, crop } = req.body;
@@ -28,10 +29,24 @@ export const simulateReceiveSMS = async (req: Request, res: Response) => {
       forecast.drivers = JSON.parse(forecast.drivers);
     }
 
-    // 2. Format the SMS
-    const smsText = smsService.formatForecastForSMS(forecast);
+    // 2. Look up farmer's language preference
+    const farmerRes = await query('SELECT language FROM farmers WHERE phone = $1', [phoneNumber]);
+    const language = farmerRes.rows[0]?.language || 'English';
 
-    // 3. Send the SMS
+    // 3. Format the SMS
+    let smsText = smsService.formatForecastForSMS(forecast);
+
+    // 4. Translate if necessary
+    if (language !== 'English') {
+      try {
+        const translated = await translateText(smsText, language);
+        smsText = translated as string;
+      } catch (e) {
+        console.warn('Failed to translate SMS:', e);
+      }
+    }
+
+    // 5. Send the SMS
     const sendResult = await smsService.sendSMS({
       to: phoneNumber,
       body: smsText
