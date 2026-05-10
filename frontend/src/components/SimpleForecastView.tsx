@@ -1,15 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { MessageSquare, Volume2, Info } from 'lucide-react-native';
+import { MessageSquare, Volume2, Info, VolumeX } from 'lucide-react-native';
 import { useTranslation } from '../utils/translations';
 
 interface SimpleForecastViewProps {
   data: any;
   onVoiceReadout: () => void;
   onTrackRecordPress: () => void;
+  isSpeaking?: boolean;
 }
 
-const SimpleForecastView = ({ data, onVoiceReadout, onTrackRecordPress }: SimpleForecastViewProps) => {
+const SimpleForecastView = ({ data, onVoiceReadout, onTrackRecordPress, isSpeaking }: SimpleForecastViewProps) => {
   const { t, translate, language } = useTranslation();
   const [translatedData, setTranslatedData] = React.useState<any>(null);
   
@@ -106,8 +107,14 @@ const SimpleForecastView = ({ data, onVoiceReadout, onTrackRecordPress }: Simple
       {/* Action Buttons styled as quick replies */}
       <View style={styles.actionRow}>
         <TouchableOpacity style={styles.actionButton} onPress={onVoiceReadout}>
-          <Volume2 size={18} color="#2E7D32" />
-          <Text style={styles.actionButtonText}>{t.listen}</Text>
+          {isSpeaking ? (
+            <VolumeX size={18} color="#2E7D32" />
+          ) : (
+            <Volume2 size={18} color="#2E7D32" />
+          )}
+          <Text style={styles.actionButtonText}>
+            {isSpeaking ? t.stop || 'Stop' : t.listen}
+          </Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.actionButton} onPress={onTrackRecordPress}>

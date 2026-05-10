@@ -65,6 +65,7 @@ const HomeScreen = ({ navigation }: any) => {
   const [isOffline, setIsOffline] = useState(false);
   const [insufficientData, setInsufficientData] = useState(false);
   const [marketData, setMarketData] = useState<any[]>([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const fetchData = async () => {
     // 1. Try to load from offline storage first (Stale-While-Revalidate)
@@ -129,6 +130,12 @@ const HomeScreen = ({ navigation }: any) => {
   };
 
   const handleVoiceReadout = async () => {
+    if (isSpeaking) {
+      Speech.stop();
+      setIsSpeaking(false);
+      return;
+    }
+
     if (!forecast) return;
     
     const langMap: any = {
@@ -141,9 +148,17 @@ const HomeScreen = ({ navigation }: any) => {
 
     const localizedText = await getLocalizedReadout(forecast, profile.language);
 
+    setIsSpeaking(true);
+
     Speech.speak(localizedText, {
       language: langMap[profile.language] || 'en-IN',
-      rate: 0.85 
+      rate: 0.85,
+      onDone: () => setIsSpeaking(false),
+      onStopped: () => setIsSpeaking(false),
+      onError: (e) => {
+        console.error('TTS Error:', e);
+        setIsSpeaking(false);
+      }
     });
   };
 
@@ -233,6 +248,7 @@ const HomeScreen = ({ navigation }: any) => {
               data={forecast}
               onVoiceReadout={handleVoiceReadout}
               onTrackRecordPress={() => setShowTrackRecord(true)}
+              isSpeaking={isSpeaking}
             />
           ) : (
             <TouchableOpacity activeOpacity={0.9} onPress={() => setShowDecision(true)}>
@@ -240,6 +256,7 @@ const HomeScreen = ({ navigation }: any) => {
                 data={forecast}
                 onVoiceReadout={handleVoiceReadout}
                 onTrackRecordPress={() => setShowTrackRecord(true)}
+                isSpeaking={isSpeaking}
               />
               {forecast.recommendation && (
                 <View style={styles.quickAction}>

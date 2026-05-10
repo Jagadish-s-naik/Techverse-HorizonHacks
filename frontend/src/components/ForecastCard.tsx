@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { TrendingUp, TrendingDown, Minus, Volume2, Info } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Minus, Volume2, Info, VolumeX } from 'lucide-react-native';
 import { useTranslation } from '../utils/translations';
 
 interface ForecastCardProps {
@@ -17,9 +17,10 @@ interface ForecastCardProps {
   };
   onVoiceReadout: () => void;
   onTrackRecordPress: () => void;
+  isSpeaking?: boolean;
 }
 
-const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCardProps) => {
+const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress, isSpeaking }: ForecastCardProps) => {
   const { t, language, translate } = useTranslation();
   const [translatedData, setTranslatedData] = React.useState({
     crop: data.crop,
@@ -68,7 +69,11 @@ const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCard
           <Text style={styles.mandiSubtitle}>{translatedData.mandi} {t.mandiLabel}</Text>
         </View>
         <TouchableOpacity onPress={onVoiceReadout} style={styles.voiceButton}>
-          <Volume2 size={24} color="#2E7D32" />
+          {isSpeaking ? (
+            <VolumeX size={24} color="#2E7D32" />
+          ) : (
+            <Volume2 size={24} color="#2E7D32" />
+          )}
         </TouchableOpacity>
       </View>
 
