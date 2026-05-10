@@ -11,6 +11,7 @@ interface DecisionSheetProps {
     risk: 'safe' | 'moderate' | 'risky';
     rationale: string;
     alternative: string;
+    probability?: number;
   } | null;
 }
 
@@ -51,6 +52,13 @@ const DecisionSheet = ({ visible, onClose, recommendation }: DecisionSheetProps)
                     {(t[recommendation.risk] || recommendation.risk).toUpperCase()} {t.risk.toUpperCase()}
                   </Text>
                 </View>
+                {recommendation.probability && (
+                  <View style={[styles.riskBadge, { backgroundColor: '#E1F5FE', marginLeft: 8 }]}>
+                    <Text style={[styles.riskText, { color: '#0288D1' }]}>
+                      {recommendation.probability}% SUCCESS
+                    </Text>
+                  </View>
+                )}
               </View>
               <Text style={styles.actionText}>{recommendation.action}</Text>
             </View>

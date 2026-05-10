@@ -1,5 +1,8 @@
-import { query } from '../config/db';
-import { generateDriverBullets, type DriverContext } from '../utils/ai';
+import { query } from '../config/db.js';
+import { generateDriverBullets, type DriverContext } from '../utils/ai.js';
+import { getWeatherSummary } from './weatherService.js';
+import { getHeadlines } from './newsService.js';
+import { fetchLiveMandiPrices } from './mandiService.js';
 
 export interface ForecastInput {
   prices: number[];
@@ -32,51 +35,92 @@ export function computeForecast(prices: number[]): ForecastOutput {
   return { trend, band, confidence };
 }
 
+export async function processTarget(cropInput: string, mandiInput: string) {
+  const crop = cropInput.toLowerCase();
+  const mandi = mandiInput.toLowerCase();
+
+  // Fetch actual live price from API
+  console.log(`Fetching live prices for ${crop} in ${mandi}...`);
+  const livePrices = await fetchLiveMandiPrices(crop, mandi);
+  console.log(`Live prices fetched: ${livePrices.length} records found.`);
+  const todayPrice = livePrices.length > 0 ? livePrices[0]?.price : null;
+
+  if (todayPrice) {
+    console.log(`Saving today's live price: ${todayPrice} for ${crop} in ${mandi}`);
+    // Save today's live price
+    await query(
+      `INSERT INTO mandi_prices (crop, mandi, date, price) 
+       VALUES ($1, $2, CURRENT_DATE, $3)
+       ON CONFLICT (crop, mandi, date) DO UPDATE SET price = EXCLUDED.price`,
+      [crop, mandi, todayPrice]
+    );
+  }
+
+  // 2. Get last 30 days of prices
+  let priceData = await query(
+    'SELECT price FROM mandi_prices WHERE crop = $1 AND mandi = $2 ORDER BY date DESC LIMIT 30',
+    [crop, mandi]
+  );
+  
+  // Removed auto-backfill logic to ensure only real data is used.
+  
+  const prices = priceData.rows.map((r: any) => Number(r.price)).reverse();
+  console.log(`Historical price records found in DB: ${prices.length}`);
+
+  if (prices.length < 7) {
+    console.warn(`Insufficient data for ${crop} in ${mandi}: only ${prices.length} records found.`);
+    throw new Error(`Insufficient real historical data for ${crop} in ${mandi}. Need at least 7 days of prices to forecast.`);
+  }
+
+  const forecast = computeForecast(prices);
+  
+  // 3. Fetch external data from APIs
+  const weatherSummary = await getWeatherSummary(mandi);
+  const headlines = await getHeadlines(crop);
+  
+  // 4. Generate AI drivers
+  const drivers = await generateDriverBullets({
+    crop,
+    district: mandi, // Using mandi as district proxy for MVP
+    trend: forecast.trend,
+    ma7: prices[prices.length - 1] ?? 0,
+    weatherSummary,
+    headlines,
+    language: 'English'
+  });
+  
+  // 5. Save to DB and return the inserted forecast
+  const result = await query(
+    `INSERT INTO forecasts (crop, mandi, forecast_date, price_low, price_high, trend, confidence, drivers)
+     VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6, $7)
+     ON CONFLICT (crop, mandi, forecast_date) DO UPDATE SET
+     price_low = EXCLUDED.price_low,
+     price_high = EXCLUDED.price_high,
+     trend = EXCLUDED.trend,
+     confidence = EXCLUDED.confidence,
+     drivers = EXCLUDED.drivers
+     RETURNING *`,
+    [crop, mandi, forecast.band.low, forecast.band.high, forecast.trend, forecast.confidence, JSON.stringify(drivers)]
+  );
+
+  return result.rows[0];
+}
+
 export async function runForecastPipeline() {
-  // 1. Fetch latest crops/mandis
-  const targets = await query('SELECT DISTINCT crop, mandi FROM mandi_prices');
+  // 1. Fetch latest crops/mandis from both mandi_prices and farmers
+  const targets = await query(`
+    SELECT crop, mandi FROM mandi_prices
+    UNION
+    SELECT crop, mandi FROM farmers
+  `);
   
   for (const target of targets.rows) {
     const { crop, mandi } = target;
-    
-    // 2. Get last 30 days of prices
-    const priceData = await query(
-      'SELECT price FROM mandi_prices WHERE crop = $1 AND mandi = $2 ORDER BY date DESC LIMIT 30',
-      [crop, mandi]
-    );
-    
-    if (priceData.rows.length < 14) continue;
-    
-    const prices = priceData.rows.map((r: any) => Number(r.price)).reverse();
-    const forecast = computeForecast(prices);
-    
-    // 3. Mock external data for MVP
-    const weatherSummary = "Scattered rainfall expected in the coming week";
-    const headlines = ["Increased arrivals in local mandis", "Fuel price hike impacts transport"];
-    
-    // 4. Generate AI drivers
-    const drivers = await generateDriverBullets({
-      crop,
-      district: mandi, // Using mandi as district proxy for MVP
-      trend: forecast.trend,
-      ma7: prices[prices.length - 1] ?? 0,
-      weatherSummary,
-      headlines,
-      language: 'English'
-    });
-    
-    // 5. Save to DB
-    await query(
-      `INSERT INTO forecasts (crop, mandi, forecast_date, price_low, price_high, trend, confidence, drivers)
-       VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6, $7)
-       ON CONFLICT (crop, mandi, forecast_date) DO UPDATE SET
-       price_low = EXCLUDED.price_low,
-       price_high = EXCLUDED.price_high,
-       trend = EXCLUDED.trend,
-       confidence = EXCLUDED.confidence,
-       drivers = EXCLUDED.drivers`,
-      [crop, mandi, forecast.band.low, forecast.band.high, forecast.trend, forecast.confidence, JSON.stringify(drivers)]
-    );
+    try {
+      await processTarget(crop.toLowerCase(), mandi.toLowerCase());
+    } catch (e) {
+      console.error(`Error processing pipeline for ${crop} in ${mandi}:`, e);
+    }
   }
 }
 

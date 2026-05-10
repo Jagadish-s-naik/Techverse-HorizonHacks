@@ -31,12 +31,12 @@ interface ProfileState {
 export const useProfileStore = create<ProfileState>((set, get) => ({
   profile: {
     id: null,
-    crop: 'Tomato',
+    crop: 'potato',
     landSize: 1,
     hasIrrigation: false,
     hasStorage: false,
-    mandi: 'Kolar',
-    district: 'Kolar',
+    mandi: 'agra',
+    district: 'agra',
     language: 'English',
     isSimpleMode: false,
     isOnboarded: false,

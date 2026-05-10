@@ -78,6 +78,8 @@ interface TranslationMap {
     whyLabel: string;
     replyHelp: string;
     mandiLabel: string;
+    insufficientData: string;
+    livePrice: string;
     // Recommendation keys
     REC_HOLD_STORAGE_ACTION: string;
     REC_HOLD_STORAGE_RATIONALE: string;
@@ -174,6 +176,8 @@ export const translations: TranslationMap = {
     whyLabel: "WHY",
     replyHelp: "Reply 'HELP' for more info",
     mandiLabel: "Mandi",
+    insufficientData: "Market data for this crop is currently limited. Please check back in a few days or try a different market.",
+    livePrice: "Live Price",
     REC_HOLD_STORAGE_ACTION: "Hold — wait 5–7 days before selling",
     REC_HOLD_STORAGE_RATIONALE: "Prices are trending up with high confidence, and your storage allows you to wait for a better peak.",
     REC_HOLD_STORAGE_ALT: "If you need immediate cash, sell only 30% of your stock now.",
@@ -266,6 +270,8 @@ export const translations: TranslationMap = {
     whyLabel: "क्यों",
     replyHelp: "अधिक जानकारी के लिए 'HELP' लिखें",
     mandiLabel: "मंडी",
+    insufficientData: "इस फसल के लिए बाजार डेटा अभी सीमित है। कृपया कुछ दिनों बाद दोबारा प्रयास करें या कोई अन्य मंडी चुनें।",
+    livePrice: "ताजा भाव",
     REC_HOLD_STORAGE_ACTION: "रोकें — बेचने से पहले 5-7 दिन प्रतीक्षा करें",
     REC_HOLD_STORAGE_RATIONALE: "कीमतें बढ़ रही हैं और आपका भंडारण आपको बेहतर कीमतों के लिए प्रतीक्षा करने की अनुमति देता है।",
     REC_HOLD_STORAGE_ALT: "यदि आपको तत्काल नकदी की आवश्यकता है, तो अभी केवल 30% स्टॉक बेचें।",
@@ -358,6 +364,8 @@ export const translations: TranslationMap = {
     whyLabel: "ಏಕೆ",
     replyHelp: "ಹೆಚ್ಚಿನ ಮಾಹಿತಿಗಾಗಿ 'HELP' ಎಂದು ರಿಪ್ಲೈ ಮಾಡಿ",
     mandiLabel: "ಮಾರುಕಟ್ಟೆ",
+    insufficientData: "ಈ ಬೆಳೆಯ ಮಾರುಕಟ್ಟೆ ಮಾಹಿತಿ ಪ್ರಸ್ತುತ ಸೀಮಿತವಾಗಿದೆ. ದಯವಿಟ್ಟು ಕೆಲವು ದಿನಗಳ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಬೇರೆ ಮಾರುಕಟ್ಟೆಯನ್ನು ಆರಿಸಿ.",
+    livePrice: "ಇಂದಿನ ಬೆಲೆ",
     REC_HOLD_STORAGE_ACTION: "ಹಿಡಿದಿಟ್ಟುಕೊಳ್ಳಿ — ಮಾರಾಟ ಮಾಡುವ ಮೊದಲು 5-7 ದಿನ ಕಾಯಿರಿ",
     REC_HOLD_STORAGE_RATIONALE: "ಬೆಲೆಗಳು ಏರುತ್ತಿವೆ, ಮತ್ತು ನಿಮ್ಮ ಸಂಗ್ರಹಣಾ ಸೌಲಭ್ಯವು ಉತ್ತಮ ಬೆಲೆಗಾಗಿ ಕಾಯಲು ಅನುವು ಮಾಡಿಕೊಡುತ್ತದೆ.",
     REC_HOLD_STORAGE_ALT: "ನಿಮಗೆ ತುರ್ತು ಹಣದ ಅಗತ್ಯವಿದ್ದರೆ, ಈಗ ನಿಮ್ಮ ದಾಸ್ತಾನಿನ 30% ಮಾತ್ರ ಮಾರಿ.",
@@ -404,7 +412,7 @@ export const translations: TranslationMap = {
     standard: "मानक",
     simple: "साधे",
     offlineMessage: "तुम्ही सध्या ऑफलाइन आहात. कॅश केलेला डेटा दाखवत आहे.",
-    syncingMessage: "प्रलंबित बदल सिಂಕ್ करत आहे...",
+    syncingMessage: "प्रलंबित बदल सिंक करत आहे...",
     tapToViewDecision: "शिफारस केलेला निर्णय पाहण्यासाठी टॅप करा",
     trackRecord: "ट्रॅक रेकॉर्ड",
     reliableInsights: "विश्वसनीय माहिती",
@@ -450,6 +458,8 @@ export const translations: TranslationMap = {
     whyLabel: "का",
     replyHelp: "अधिक माहितीसाठी 'HELP' रिप्लाय करा",
     mandiLabel: "मंडी",
+    insufficientData: "या पिकासाठी बाजारपेठेतील माहिती सध्या मर्यादित आहे. कृपया काही दिवसांनी पुन्हा तपासा किंवा दुसरी बाजारपेठ निवडा।",
+    livePrice: "आजचा भाव",
     REC_HOLD_STORAGE_ACTION: "थांबा — विक्रीपूर्वी ५-७ दिवस वाट पहा",
     REC_HOLD_STORAGE_RATIONALE: "किंमती वाढत आहेत आणि तुमच्याकडे साठवणुकीची सोय असल्याने तुम्ही चांगल्या किंमतीसाठी थांबू शकता.",
     REC_HOLD_STORAGE_ALT: "जर तुम्हाला पैशांची तात्काळ गरज असेल, तर फक्त ३०% माल आता विकून टाका.",
@@ -542,6 +552,8 @@ export const translations: TranslationMap = {
     whyLabel: "ఎందుకు",
     replyHelp: "మరింత సమాచారం కోసం 'HELP' అని రిప్లై ఇవ్వండి",
     mandiLabel: "మార్కెట్",
+    insufficientData: "ఈ పంటకు సంబంధించిన మార్కెట్ సమాచారం ప్రస్తుతం తక్కువగా ఉంది. దయచేసి కొన్ని రోజుల తర్వాత మళ్లీ ప్రయత్నించండి లేదా వేరే మార్కెట్‌ను ఎంచుకోండి.",
+    livePrice: "నేటి ధర",
     REC_HOLD_STORAGE_ACTION: "ఆపండి — అమ్మే ముందు 5-7 రోజులు వేచి ఉండండి",
     REC_HOLD_STORAGE_RATIONALE: "ధరలు పెరుగుతున్నాయి మరియు మీ నిల్వ సౌకర్యం మంచి ధర కోసం వేచి ఉండటానికి అనుమతిస్తుంది.",
     REC_HOLD_STORAGE_ALT: "మీకు అత్యవసరంగా డబ్బు అవసరమైతే, ఇప్పుడు మీ స్టాక్లో 30% మాత్రమే అమ్మండి.",
@@ -560,6 +572,13 @@ export const translations: TranslationMap = {
 export const getLocalizedReadout = (forecast: any, lang: string) => {
   const t = translations[lang] || translations.English;
   
+  if (forecast.status === 'insufficient_data') {
+    if (forecast.todayPrice) {
+      return `${t.forecastFor} ${forecast.crop} ${t.in} ${forecast.mandi}. ${t.livePrice} ${t.rupeesPerKg}: ₹${forecast.todayPrice}. ${t.insufficientData}`;
+    }
+    return t.insufficientData;
+  }
+
   const trendMap: any = {
     up: t.up,
     down: t.down,

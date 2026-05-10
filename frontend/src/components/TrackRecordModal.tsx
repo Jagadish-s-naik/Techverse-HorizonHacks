@@ -43,23 +43,9 @@ const TrackRecordModal = ({ visible, onClose, crop, mandi }: TrackRecordModalPro
       }
     } catch (error) {
       console.error('Error fetching history:', error);
-      // Mock data for demo
-      const mockHistory = Array.from({ length: 7 }).map((_, i) => {
-        const base = 40 + Math.random() * 5;
-        const low = base - 2;
-        const high = base + 2;
-        const actual = base + (Math.random() * 4 - 2);
-        return {
-          id: i,
-          forecast_date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
-          price_low: low,
-          price_high: high,
-          actual_price: actual,
-          trend: Math.random() > 0.5 ? 'up' : 'down'
-        };
-      });
-      setHistory(mockHistory);
-      setAccuracy(88);
+      // Fallback: we no longer inject mock data. We just clear the state so it shows empty.
+      setHistory([]);
+      setAccuracy(0);
     } finally {
       setLoading(false);
     }

@@ -1,18 +1,39 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, ActivityIndicator } from 'react-native';
 import { useProfileStore } from '../store/useProfileStore';
 import { useTranslation } from '../utils/translations';
-import { ArrowRight, ArrowLeft, Check } from 'lucide-react-native';
+import { ArrowRight, ArrowLeft, Check, RefreshCw } from 'lucide-react-native';
+import { metaService } from '../services/api';
 
-const CROPS = ['Tomato', 'Onion', 'Chickpea', 'Wheat', 'Rice', 'Mustard'];
+const DEFAULT_CROPS = ['rice', 'wheat', 'cotton', 'mustard', 'maize', 'soybean', 'potato', 'tomato', 'onion'];
+const DEFAULT_MANDIS = ['vashi', 'azadpur', 'amravati', 'indore', 'gulabbagh', 'ujjain', 'agra', 'kolar', 'lasalgaon'];
 const LANGUAGES = ['English', 'Hindi', 'Kannada', 'Marathi', 'Telugu'];
-const MANDIS = ['Kolar', 'Lasalgaon', 'Indore', 'Azadpur', 'Vashi'];
 
 const OnboardingScreen = ({ navigation }: any) => {
   const { profile, setProfile, createProfile } = useProfileStore();
   const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [fetchingOptions, setFetchingOptions] = useState(true);
+  const [crops, setCrops] = useState<string[]>(DEFAULT_CROPS);
+  const [mandis, setMandis] = useState<string[]>(DEFAULT_MANDIS);
+
+  React.useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        console.log('Onboarding: Fetching live options...');
+        const res = await metaService.getOptions();
+        if (res.data.crops?.length) setCrops(res.data.crops);
+        if (res.data.mandis?.length) setMandis(res.data.mandis);
+        console.log('Onboarding: Options fetched successfully');
+      } catch (error) {
+        console.error('Onboarding: Failed to fetch options, using defaults:', error);
+      } finally {
+        setFetchingOptions(false);
+      }
+    };
+    fetchOptions();
+  }, []);
 
   const nextStep = () => {
     if (step < 5) setStep(step + 1);
@@ -57,20 +78,28 @@ const OnboardingScreen = ({ navigation }: any) => {
     }
   };
 
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
   const renderStep = () => {
     switch (step) {
       case 1:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.label}>{t.chooseCrop}</Text>
+            {fetchingOptions && (
+              <View style={styles.fetchingContainer}>
+                <ActivityIndicator size="small" color="#2E7D32" />
+                <Text style={styles.loadingText}>Fetching live crops...</Text>
+              </View>
+            )}
             <View style={styles.chipContainer}>
-              {CROPS.map(crop => (
+              {crops.map(crop => (
                 <TouchableOpacity
                   key={crop}
-                  style={[styles.chip, profile.crop === crop && styles.chipActive]}
-                  onPress={() => setProfile({ crop })}
+                  style={[styles.chip, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipActive]}
+                  onPress={() => setProfile({ crop: crop.toLowerCase() })}
                 >
-                  <Text style={[styles.chipText, profile.crop === crop && styles.chipTextActive]}>{crop}</Text>
+                  <Text style={[styles.chipText, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipTextActive]}>{capitalize(crop)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -114,15 +143,16 @@ const OnboardingScreen = ({ navigation }: any) => {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.label}>{t.selectMandi}</Text>
+            {fetchingOptions && <Text style={styles.loadingText}>Fetching live mandis...</Text>}
             <ScrollView style={styles.list}>
-              {MANDIS.map(mandi => (
+              {mandis.map(mandi => (
                 <TouchableOpacity
                   key={mandi}
-                  style={[styles.listItem, profile.mandi === mandi && styles.listItemActive]}
-                  onPress={() => setProfile({ mandi, district: mandi })}
+                  style={[styles.listItem, profile.mandi.toLowerCase() === mandi.toLowerCase() && styles.listItemActive]}
+                  onPress={() => setProfile({ mandi: mandi.toLowerCase(), district: mandi.toLowerCase() })}
                 >
-                  <Text style={[styles.listItemText, profile.mandi === mandi && styles.listItemTextActive]}>{mandi}</Text>
-                  {profile.mandi === mandi && <Check size={20} color="#2E7D32" />}
+                  <Text style={[styles.listItemText, profile.mandi.toLowerCase() === mandi.toLowerCase() && styles.listItemTextActive]}>{capitalize(mandi)}</Text>
+                  {profile.mandi.toLowerCase() === mandi.toLowerCase() && <Check size={20} color="#2E7D32" />}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -208,6 +238,7 @@ const styles = StyleSheet.create({
   roundButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center' },
   roundButtonText: { fontSize: 30, color: '#2E7D32', fontWeight: 'bold' },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  loadingText: { fontSize: 14, color: '#666', fontStyle: 'italic', marginBottom: 12 },
   list: { flex: 1 },
   listItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#EEE' },
   listItemActive: { backgroundColor: '#F1F8E9', paddingHorizontal: 10, borderRadius: 8 },

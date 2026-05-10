@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
-import { smsService } from '../services/smsService';
-import { query } from '../config/db';
+import { smsService } from '../services/smsService.js';
+import { query } from '../config/db.js';
 
 export const simulateReceiveSMS = async (req: Request, res: Response) => {
   const { phoneNumber, crop } = req.body;

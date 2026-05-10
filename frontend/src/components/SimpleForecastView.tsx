@@ -11,6 +11,8 @@ interface SimpleForecastViewProps {
 
 const SimpleForecastView = ({ data, onVoiceReadout, onTrackRecordPress }: SimpleForecastViewProps) => {
   const { t } = useTranslation();
+  const hasForecast = data.price_low !== undefined && data.price_high !== undefined;
+
   return (
     <View style={styles.container}>
       <View style={styles.smsHeader}>
@@ -22,13 +24,21 @@ const SimpleForecastView = ({ data, onVoiceReadout, onTrackRecordPress }: Simple
       <View style={styles.bubbleLeft}>
         <Text style={styles.bubbleText}>
           {t.forecastFor} {data.crop} {t.in} {data.mandi}:{"\n"}
-          {t.expectedPriceIs}: ₹{data.price_low} - ₹{data.price_high} / kg{"\n"}
-          {t.trendIs}: {data.trend === 'up' ? `↗️ ${t.up.toUpperCase()}` : data.trend === 'down' ? `↘️ ${t.down.toUpperCase()}` : `➡️ ${t.stable.toUpperCase()}`}
+          {hasForecast ? (
+            <>
+              {t.expectedPriceIs}: ₹{data.price_low} - ₹{data.price_high} / kg{"\n"}
+              {t.trendIs}: {data.trend === 'up' ? `↗️ ${t.up.toUpperCase()}` : data.trend === 'down' ? `↘️ ${t.down.toUpperCase()}` : `➡️ ${t.stable.toUpperCase()}`}
+            </>
+          ) : (
+            <>
+              {t.livePrice}: {data.todayPrice ? `₹${data.todayPrice} / kg` : 'N/A'}
+            </>
+          )}
         </Text>
       </View>
 
       {/* Bubble 2: Recommendation */}
-      {data.recommendation && (
+      {hasForecast && data.recommendation && (
         <View style={styles.bubbleLeft}>
           <Text style={styles.bubbleText}>
             {t.adviceLabel}: {data.recommendation.action}{"\n"}
@@ -38,14 +48,15 @@ const SimpleForecastView = ({ data, onVoiceReadout, onTrackRecordPress }: Simple
       )}
 
       {/* Bubble 3: Confidence & Drivers */}
-      <View style={styles.bubbleLeft}>
-        <Text style={styles.bubbleText}>
-          {t.confidenceIs.toUpperCase()}: {data.confidence}%{"\n"}
-          {t.keyFactors.toUpperCase()}:{"\n"}
-          • {data.drivers[0]}{"\n"}
-          • {data.drivers[1]}
-        </Text>
-      </View>
+      {hasForecast && data.confidence !== undefined && data.drivers && (
+        <View style={styles.bubbleLeft}>
+          <Text style={styles.bubbleText}>
+            {t.confidenceIs.toUpperCase()}: {data.confidence}%{"\n"}
+            {t.keyFactors.toUpperCase()}:{"\n"}
+            {data.drivers.map((d: string, i: number) => `• ${d}${i < data.drivers.length - 1 ? '\n' : ''}`)}
+          </Text>
+        </View>
+      )}
 
       {/* Action Buttons styled as quick replies */}
       <View style={styles.actionRow}>

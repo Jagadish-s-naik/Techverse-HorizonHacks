@@ -7,12 +7,13 @@ interface ForecastCardProps {
   data: {
     crop: string;
     mandi: string;
-    price_low: number;
-    price_high: number;
-    trend: 'up' | 'down' | 'stable';
-    confidence: number;
-    drivers: string[];
-    forecast_date: string;
+    price_low?: number;
+    price_high?: number;
+    trend?: 'up' | 'down' | 'stable';
+    confidence?: number;
+    drivers?: string[];
+    forecast_date?: string;
+    todayPrice?: number;
   };
   onVoiceReadout: () => void;
   onTrackRecordPress: () => void;
@@ -20,8 +21,12 @@ interface ForecastCardProps {
 
 const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCardProps) => {
   const { t } = useTranslation();
-  const TrendIcon = data.trend === 'up' ? TrendingUp : data.trend === 'down' ? TrendingDown : Minus;
-  const trendColor = data.trend === 'up' ? '#2E7D32' : data.trend === 'down' ? '#C62828' : '#F9A825';
+  
+  // Fallbacks for missing data
+  const hasForecast = data.price_low !== undefined && data.price_high !== undefined;
+  const trend = data.trend || 'stable';
+  const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
+  const trendColor = trend === 'up' ? '#2E7D32' : trend === 'down' ? '#C62828' : '#F9A825';
 
   return (
     <View style={styles.card}>
@@ -36,39 +41,53 @@ const ForecastCard = ({ data, onVoiceReadout, onTrackRecordPress }: ForecastCard
       </View>
 
       <View style={styles.priceContainer}>
-        <Text style={styles.priceLabel}>{t.expectedPriceRange}</Text>
+        <Text style={styles.priceLabel}>
+          {hasForecast ? t.expectedPriceRange : t.livePrice}
+        </Text>
         <View style={styles.priceRow}>
-          <Text style={styles.priceValue}>₹{data.price_low} — ₹{data.price_high}</Text>
-          <View style={[styles.trendBadge, { backgroundColor: trendColor + '20' }]}>
-            <TrendIcon size={18} color={trendColor} />
+          <Text style={styles.priceValue}>
+            {hasForecast 
+              ? `₹${data.price_low} — ₹${data.price_high}`
+              : data.todayPrice ? `₹${data.todayPrice}` : 'N/A'}
+          </Text>
+          {hasForecast && (
+            <View style={[styles.trendBadge, { backgroundColor: trendColor + '20' }]}>
+              <TrendIcon size={18} color={trendColor} />
+            </View>
+          )}
+        </View>
+      </View>
+
+      {hasForecast && data.confidence !== undefined && (
+        <View style={styles.confidenceBarContainer}>
+          <View style={styles.confidenceHeader}>
+            <Text style={styles.confidenceLabel}>{t.confidenceIs}</Text>
+            <Text style={styles.confidenceValue}>{data.confidence}%</Text>
+          </View>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${data.confidence}%` }]} />
           </View>
         </View>
-      </View>
+      )}
 
-      <View style={styles.confidenceBarContainer}>
-        <View style={styles.confidenceHeader}>
-          <Text style={styles.confidenceLabel}>{t.confidenceIs}</Text>
-          <Text style={styles.confidenceValue}>{data.confidence}%</Text>
+      {hasForecast && data.drivers && data.drivers.length > 0 && (
+        <View style={styles.driversContainer}>
+          <Text style={styles.driversTitle}>{t.keyPriceDrivers}</Text>
+          {data.drivers.map((driver, index) => (
+            <View key={index} style={styles.driverItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.driverText}>{driver}</Text>
+            </View>
+          ))}
         </View>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${data.confidence}%` }]} />
-        </View>
-      </View>
+      )}
 
-      <View style={styles.driversContainer}>
-        <Text style={styles.driversTitle}>{t.keyPriceDrivers}</Text>
-        {data.drivers.map((driver, index) => (
-          <View key={index} style={styles.driverItem}>
-            <View style={styles.bullet} />
-            <Text style={styles.driverText}>{driver}</Text>
-          </View>
-        ))}
-      </View>
-
-      <TouchableOpacity onPress={onTrackRecordPress} style={styles.trackRecordLink}>
-        <Info size={16} color="#666" />
-        <Text style={styles.trackRecordText}>{t.howAccurate}</Text>
-      </TouchableOpacity>
+      {hasForecast && (
+        <TouchableOpacity onPress={onTrackRecordPress} style={styles.trackRecordLink}>
+          <Info size={16} color="#666" />
+          <Text style={styles.trackRecordText}>{t.howAccurate}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };

@@ -29,4 +29,12 @@ export const communityService = {
     api.get(`/community?crop=${crop.toLowerCase()}&district=${district.toLowerCase()}`),
 };
 
+export const metaService = {
+  getOptions: () => api.get('/meta/options'),
+};
+
+export const marketService = {
+  getOverview: () => api.get('/meta/market/overview'),
+};
+
 export default api;

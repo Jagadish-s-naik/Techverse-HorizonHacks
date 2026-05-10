@@ -1,16 +1,37 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, ActivityIndicator } from 'react-native';
 import { useProfileStore } from '../store/useProfileStore';
 import { useTranslation } from '../utils/translations';
 import { User, ChevronRight, Save, LogOut } from 'lucide-react-native';
+import { metaService } from '../services/api';
 
-const CROPS = ['Tomato', 'Onion', 'Chickpea', 'Wheat', 'Rice', 'Mustard'];
+const DEFAULT_CROPS = ['rice', 'wheat', 'cotton', 'mustard', 'maize', 'soybean', 'potato', 'tomato', 'onion'];
+const DEFAULT_MANDIS = ['vashi', 'azadpur', 'amravati', 'indore', 'gulabbagh', 'ujjain', 'agra', 'kolar', 'lasalgaon'];
 const LANGUAGES = ['English', 'Hindi', 'Kannada', 'Marathi', 'Telugu'];
-const MANDIS = ['Kolar', 'Lasalgaon', 'Indore', 'Azadpur', 'Vashi'];
 
 const ProfileScreen = ({ navigation }: any) => {
   const { profile, setProfile, saveProfile } = useProfileStore();
   const { t } = useTranslation();
+  const [crops, setCrops] = React.useState<string[]>(DEFAULT_CROPS);
+  const [mandis, setMandis] = React.useState<string[]>(DEFAULT_MANDIS);
+  const [loadingOptions, setLoadingOptions] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const res = await metaService.getOptions();
+        if (res.data.crops?.length) setCrops(res.data.crops);
+        if (res.data.mandis?.length) setMandis(res.data.mandis);
+      } catch (error) {
+        console.error('Failed to fetch profile options:', error);
+      } finally {
+        setLoadingOptions(false);
+      }
+    };
+    fetchOptions();
+  }, []);
+
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
   const handleSave = async () => {
     await saveProfile();
@@ -37,30 +58,36 @@ const ProfileScreen = ({ navigation }: any) => {
         <Text style={styles.sectionTitle}>{t.cropMarket}</Text>
         
         <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>{t.primaryCrop}</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.settingLabel}>{t.primaryCrop}</Text>
+            {loadingOptions && <ActivityIndicator size="small" color="#2E7D32" style={{ marginLeft: 8 }} />}
+          </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
-            {CROPS.map(crop => (
+            {crops.map(crop => (
               <TouchableOpacity
                 key={crop}
-                style={[styles.chip, profile.crop === crop && styles.chipActive]}
-                onPress={() => setProfile({ crop })}
+                style={[styles.chip, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipActive]}
+                onPress={() => setProfile({ crop: crop.toLowerCase() })}
               >
-                <Text style={[styles.chipText, profile.crop === crop && styles.chipTextActive]}>{crop}</Text>
+                <Text style={[styles.chipText, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipTextActive]}>{capitalize(crop)}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
 
         <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>{t.nearestMandi}</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.settingLabel}>{t.nearestMandi}</Text>
+            {loadingOptions && <ActivityIndicator size="small" color="#2E7D32" style={{ marginLeft: 8 }} />}
+          </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
-            {MANDIS.map(mandi => (
+            {mandis.map(mandi => (
               <TouchableOpacity
                 key={mandi}
-                style={[styles.chip, profile.mandi === mandi && styles.chipActive]}
-                onPress={() => setProfile({ mandi, district: mandi })}
+                style={[styles.chip, profile.mandi.toLowerCase() === mandi.toLowerCase() && styles.chipActive]}
+                onPress={() => setProfile({ mandi: mandi.toLowerCase(), district: mandi.toLowerCase() })}
               >
-                <Text style={[styles.chipText, profile.mandi === mandi && styles.chipTextActive]}>{mandi}</Text>
+                <Text style={[styles.chipText, profile.mandi.toLowerCase() === mandi.toLowerCase() && styles.chipTextActive]}>{capitalize(mandi)}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -144,7 +171,8 @@ const styles = StyleSheet.create({
   section: { backgroundColor: '#fff', marginHorizontal: 16, marginTop: 20, borderRadius: 16, padding: 20, elevation: 2 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1B5E20', marginBottom: 15 },
   settingRow: { marginBottom: 20 },
-  settingLabel: { fontSize: 14, color: '#666', marginBottom: 10, fontWeight: '600' },
+  settingLabel: { fontSize: 14, color: '#666', fontWeight: '600' },
+  labelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   chipScroll: { paddingRight: 20 },
   chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#F5F5F5', borderWidth: 1, borderColor: '#EEE', marginRight: 8 },

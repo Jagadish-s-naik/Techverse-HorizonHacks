@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getLatestForecast, getForecastHistory } from '../controllers/forecastController';
+import { getLatestForecast, getForecastHistory } from '../controllers/forecastController.js';
 
 const router = Router();
 

@@ -1,18 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import { useProfileStore } from '../store/useProfileStore';
-import { forecastService, communityService } from '../services/api';
+import { forecastService, communityService, marketService } from '../services/api';
+import MarketOverview from '../components/MarketOverview';
 import ForecastCard from '../components/ForecastCard';
 import SimpleForecastView from '../components/SimpleForecastView';
 import DecisionSheet from '../components/DecisionSheet';
 import TrackRecordModal from '../components/TrackRecordModal';
 import * as Speech from 'expo-speech';
-import { Lightbulb, WifiOff, Layout, Type, User } from 'lucide-react-native';
+import { Lightbulb, WifiOff, Layout, Type, User, AlertCircle } from 'lucide-react-native';
 import { offlineStorage } from '../services/offlineStorage';
 import * as Network from 'expo-network';
 import { useTranslation, getLocalizedReadout } from '../utils/translations';
 
+import LoadingSkeleton, { MarketScrollerSkeleton } from '../components/LoadingSkeleton';
+
 const HomeScreen = ({ navigation }: any) => {
+  // ... existing states ...
   const { profile, syncChanges, isSyncing, toggleSimpleMode } = useProfileStore();
   const { t } = useTranslation();
   const [forecast, setForecast] = useState<any>(null);
@@ -22,18 +26,23 @@ const HomeScreen = ({ navigation }: any) => {
   const [showDecision, setShowDecision] = useState(false);
   const [showTrackRecord, setShowTrackRecord] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  const [insufficientData, setInsufficientData] = useState(false);
+  const [marketData, setMarketData] = useState<any[]>([]);
 
   const fetchData = async () => {
     // 1. Try to load from offline storage first (Stale-While-Revalidate)
     const cacheKeyForecast = `forecast_${profile.crop}_${profile.mandi}`;
     const cacheKeyCommunity = `community_${profile.crop}_${profile.district}`;
+    const cacheKeyMarket = `market_overview`;
 
     const cachedForecast = await offlineStorage.getResponse(cacheKeyForecast);
     const cachedCommunity = await offlineStorage.getResponse(cacheKeyCommunity);
+    const cachedMarket = await offlineStorage.getResponse(cacheKeyMarket);
 
     if (cachedForecast) setForecast(cachedForecast);
     if (cachedCommunity) setCommunity(cachedCommunity);
-    if (cachedForecast || cachedCommunity) setLoading(false);
+    if (cachedMarket) setMarketData(cachedMarket);
+    if (cachedForecast || cachedCommunity || cachedMarket) setLoading(false);
 
     try {
       const networkState = await Network.getNetworkStateAsync();
@@ -46,38 +55,26 @@ const HomeScreen = ({ navigation }: any) => {
       }
 
       const forecastRes = await forecastService.getLatest(profile.crop, profile.mandi, profile.id);
-      setForecast(forecastRes.data);
-      await offlineStorage.saveResponse(cacheKeyForecast, forecastRes.data);
+      if (forecastRes.data.status === 'insufficient_data') {
+        setInsufficientData(true);
+        // Keep the data so we can at least show the live price if available
+        setForecast(forecastRes.data);
+      } else {
+        setInsufficientData(false);
+        setForecast(forecastRes.data);
+        await offlineStorage.saveResponse(cacheKeyForecast, forecastRes.data);
+      }
 
       const communityRes = await communityService.getSignal(profile.crop, profile.district);
       setCommunity(communityRes.data);
       await offlineStorage.saveResponse(cacheKeyCommunity, communityRes.data);
+
+      const marketRes = await marketService.getOverview();
+      setMarketData(marketRes.data);
+      await offlineStorage.saveResponse(cacheKeyMarket, marketRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
       setIsOffline(true);
-      // Fallback/Mock data for demo if API fails
-      if (!forecast) {
-        setForecast({
-          crop: profile.crop,
-          mandi: profile.mandi,
-          price_low: 38,
-          price_high: 44,
-          trend: 'up',
-          confidence: 82,
-          drivers: [
-            "Increased demand in metropolitan centers driving prices",
-            "Lower arrivals in local markets due to harvest delays",
-            "Favorable weather supporting quality"
-          ],
-          forecast_date: new Date().toISOString(),
-          recommendation: {
-            action: 'Hold — wait 5–7 days before selling',
-            risk: 'moderate',
-            rationale: 'Prices are trending up with high confidence.',
-            alternative: 'Sell 30% now if cash is needed.'
-          }
-        });
-      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -109,16 +106,12 @@ const HomeScreen = ({ navigation }: any) => {
 
     Speech.speak(localizedText, {
       language: langMap[profile.language] || 'en-IN',
-      rate: 0.85 // Slightly slower for better clarity in regional languages
+      rate: 0.85 
     });
   };
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2E7D32" />
-      </View>
-    );
+    return <LoadingSkeleton />;
   }
 
   return (
@@ -154,6 +147,19 @@ const HomeScreen = ({ navigation }: any) => {
           </View>
         </View>
 
+        {marketData.length > 0 ? (
+          <MarketOverview 
+            items={marketData} 
+            onCropPress={(crop) => {
+              setProfile({ crop });
+              // Small delay to ensure state update then refresh
+              setTimeout(fetchData, 100);
+            }} 
+          />
+        ) : (
+          <MarketScrollerSkeleton />
+        )}
+
         {isOffline && (
           <View style={styles.offlineBanner}>
             <WifiOff size={16} color="#721c24" />
@@ -165,6 +171,13 @@ const HomeScreen = ({ navigation }: any) => {
           <View style={styles.syncIndicator}>
             <ActivityIndicator size="small" color="#2E7D32" />
             <Text style={styles.syncText}>{t.syncingMessage}</Text>
+          </View>
+        )}
+
+        {insufficientData && (
+          <View style={styles.errorCard}>
+            <AlertCircle size={24} color="#D32F2F" />
+            <Text style={styles.errorText}>{t.insufficientData}</Text>
           </View>
         )}
 
@@ -365,6 +378,24 @@ const styles = StyleSheet.create({
     color: '#2E7D32',
     fontSize: 13,
     fontWeight: '500',
+  },
+  errorCard: {
+    backgroundColor: '#FFEBEE',
+    borderRadius: 16,
+    padding: 20,
+    marginVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+  },
+  errorText: {
+    color: '#D32F2F',
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+    lineHeight: 20,
   },
 });
 

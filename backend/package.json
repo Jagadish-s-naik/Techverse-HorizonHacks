@@ -15,11 +15,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.95.1",
     "@upstash/redis": "^1.38.0",
+    "axios": "^1.16.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "groq-sdk": "^1.1.2",
     "node-cron": "^4.2.1",
     "pg": "^8.20.0"
   },
