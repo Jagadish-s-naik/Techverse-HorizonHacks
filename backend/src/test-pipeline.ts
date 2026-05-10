@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
-import { query } from './src/config/db.js';
-import { runForecastPipeline } from './src/services/forecastService.js';
+import { query } from './config/db.js';
+import { runForecastPipeline } from './services/forecastService.js';
 
 async function main() {
   console.log('Running forecast pipeline...');
