@@ -92,17 +92,19 @@ const OnboardingScreen = ({ navigation }: any) => {
                 <Text style={styles.loadingText}>Fetching live crops...</Text>
               </View>
             )}
-            <View style={styles.chipContainer}>
-              {crops.map(crop => (
-                <TouchableOpacity
-                  key={crop}
-                  style={[styles.chip, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipActive]}
-                  onPress={() => setProfile({ crop: crop.toLowerCase() })}
-                >
-                  <Text style={[styles.chipText, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipTextActive]}>{capitalize(crop)}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
+              <View style={styles.chipContainer}>
+                {crops.map(crop => (
+                  <TouchableOpacity
+                    key={crop}
+                    style={[styles.chip, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipActive]}
+                    onPress={() => setProfile({ crop: crop.toLowerCase() })}
+                  >
+                    <Text style={[styles.chipText, profile.crop.toLowerCase() === crop.toLowerCase() && styles.chipTextActive]}>{capitalize(crop)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </View>
         );
       case 2:
@@ -162,18 +164,20 @@ const OnboardingScreen = ({ navigation }: any) => {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.label}>{t.selectLanguage}</Text>
-            <View style={styles.chipContainer}>
-              {LANGUAGES.map(lang => (
-                <TouchableOpacity
-                  key={lang}
-                  style={[styles.chip, profile.language === lang && styles.chipActive, loading && { opacity: 0.5 }]}
-                  onPress={() => !loading && setProfile({ language: lang })}
-                  disabled={loading}
-                >
-                  <Text style={[styles.chipText, profile.language === lang && styles.chipTextActive]}>{lang}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
+              <View style={styles.chipContainer}>
+                {LANGUAGES.map(lang => (
+                  <TouchableOpacity
+                    key={lang}
+                    style={[styles.chip, profile.language === lang && styles.chipActive, loading && { opacity: 0.5 }]}
+                    onPress={() => !loading && setProfile({ language: lang })}
+                    disabled={loading}
+                  >
+                    <Text style={[styles.chipText, profile.language === lang && styles.chipTextActive]}>{lang}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </View>
         );
       default:
