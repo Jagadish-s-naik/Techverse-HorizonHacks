@@ -7,7 +7,7 @@ import { metaService } from '../services/api';
 
 const DEFAULT_CROPS = ['rice', 'wheat', 'cotton', 'mustard', 'maize', 'soybean', 'potato', 'tomato', 'onion'];
 const DEFAULT_MANDIS = ['vashi', 'azadpur', 'amravati', 'indore', 'gulabbagh', 'ujjain', 'agra', 'kolar', 'lasalgaon'];
-const LANGUAGES = ['English', 'Hindi', 'Kannada', 'Marathi', 'Telugu'];
+const LANGUAGES = ['English', 'Hindi', 'Kannada', 'Marathi', 'Telugu', 'Tamil', 'Malayalam', 'Gujarati', 'Bengali', 'Punjabi'];
 
 const OnboardingScreen = ({ navigation }: any) => {
   const { profile, setProfile, createProfile } = useProfileStore();
